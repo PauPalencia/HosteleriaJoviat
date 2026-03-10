@@ -1,8 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+beforeEach(() => {
+  process.env.REACT_APP_FIREBASE_PROJECT_ID = 'demo-project';
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ documents: [] })
+  });
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+test('renders app title', async () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(await screen.findByText(/Hostelería Joviat/i)).toBeInTheDocument();
 });
