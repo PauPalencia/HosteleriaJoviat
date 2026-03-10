@@ -12,9 +12,6 @@ body {
   background: #111;
   color: #fff;
   padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .main-content {
@@ -30,7 +27,6 @@ body {
 }
 
 .tabs button,
-.reload-button,
 .back-button {
   border: 0;
   border-radius: 8px;
@@ -95,21 +91,14 @@ body {
 }
 
 .map-box {
-  position: relative;
-  min-height: 350px;
-  background: linear-gradient(180deg, #caebff, #ebf8ff);
+  height: 420px;
   border-radius: 12px;
   border: 1px solid #9fd3f3;
   overflow: hidden;
+  background: #d5ecfa;
 }
 
-.map-pin {
-  position: absolute;
-  transform: translate(-50%, 50%);
-  font-size: 1.25rem;
-}
-
-.student-detail {
+.detail-box {
   background: #fff;
   padding: 1rem;
   border-radius: 10px;
@@ -127,6 +116,27 @@ body {
   border: 1px solid #f2b6b6;
   border-radius: 8px;
   padding: 0.75rem;
+}
+
+.link-title,
+.inline-link {
+  border: none;
+  background: none;
+  color: #0a58ca;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  padding: 0;
+}
+
+.link-title {
+  font-weight: 700;
+}
+
+.inline-link:disabled {
+  color: #6b7280;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 @media (max-width: 768px) {
