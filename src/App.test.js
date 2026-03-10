@@ -16,5 +16,5 @@ test('renders sidebar title', async () => {
   const App = require('./App').default;
 
   render(<App />);
-  expect(await screen.findByText(/Hostelería/i)).toBeInTheDocument();
+  expect(await screen.findByText(/JOVIAT/i)).toBeInTheDocument();
 });

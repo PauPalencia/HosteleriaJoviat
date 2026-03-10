@@ -23,7 +23,6 @@ function App() {
     async function loadData() {
       setLoading(true);
       setError("");
-
       try {
         const [studentsData, restaurantsData, relationsData] = await Promise.all([
           fetchCollection("Alumnos"),
@@ -52,16 +51,12 @@ function App() {
 
   const jobsByStudentId = useMemo(() => {
     const map = {};
-
     relations.forEach((relation) => {
       const alumniIds = ensureArray(relation.id_alumnos || relation.id_alumni);
       const restaurantIds = ensureArray(relation.id_restaurant);
 
       alumniIds.forEach((alumniId) => {
-        if (!map[alumniId]) {
-          map[alumniId] = [];
-        }
-
+        if (!map[alumniId]) map[alumniId] = [];
         restaurantIds.forEach((restaurantId) => {
           map[alumniId].push({
             role: relation.rol,
@@ -71,22 +66,17 @@ function App() {
         });
       });
     });
-
     return map;
   }, [relations, restaurantById]);
 
   const jobsByRestaurantId = useMemo(() => {
     const map = {};
-
     relations.forEach((relation) => {
       const alumniIds = ensureArray(relation.id_alumnos || relation.id_alumni);
       const restaurantIds = ensureArray(relation.id_restaurant);
 
       restaurantIds.forEach((restaurantId) => {
-        if (!map[restaurantId]) {
-          map[restaurantId] = [];
-        }
-
+        if (!map[restaurantId]) map[restaurantId] = [];
         alumniIds.forEach((alumniId) => {
           map[restaurantId].push({
             role: relation.rol,
@@ -96,14 +86,12 @@ function App() {
         });
       });
     });
-
     return map;
   }, [relations, studentById]);
 
   const filteredStudents = students.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
   );
-
   const filteredRestaurants = restaurants.filter((restaurant) =>
     restaurant.Name?.toLowerCase().includes(searchRestaurants.toLowerCase())
   );
@@ -120,50 +108,30 @@ function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <h1>🍽️ Hostelería</h1>
-
+        <h1>JOVIAT</h1>
         <nav>
-          <button onClick={() => goSection("inicio")} className={section === "inicio" ? "active" : ""}>
-            Inicio
-          </button>
-          <button onClick={() => goSection("alumnos")} className={section === "alumnos" ? "active" : ""}>
-            Alumnos
-          </button>
-          <button
-            onClick={() => goSection("restaurantes")}
-            className={section === "restaurantes" ? "active" : ""}
-          >
-            Restaurantes
-          </button>
-          <button onClick={() => goSection("auth")} className={section === "auth" ? "active" : ""}>
-            Iniciar sesión / Registro
-          </button>
+          <button onClick={() => goSection("inicio")} className={section === "inicio" ? "active" : ""}>Inicio</button>
+          <button onClick={() => goSection("alumnos")} className={section === "alumnos" ? "active" : ""}>Alumnos</button>
+          <button onClick={() => goSection("restaurantes")} className={section === "restaurantes" ? "active" : ""}>Restaurantes</button>
+          <button onClick={() => goSection("auth")} className={section === "auth" ? "active" : ""}>Iniciar sesión / Registro</button>
         </nav>
       </aside>
 
       <main className="content">
-        {loading && <p>Cargando datos desde Firestore…</p>}
+        {loading && <p className="state-text">Cargando datos desde Firestore…</p>}
         {error && <p className="error-box">Error: {error}</p>}
 
         {!loading && !error && section === "inicio" && (
           <section className="panel">
-            <h2>Bienvenido 👋</h2>
-            <p>
-              Aquí puedes ver alumnos, restaurantes y las relaciones de prácticas/trabajo entre ellos. Usa el menú de
-              la izquierda para navegar.
-            </p>
+            <h2>Inicio</h2>
+            <p className="state-text">Usa el menú para navegar entre alumnos, restaurantes y autenticación.</p>
           </section>
         )}
 
         {!loading && !error && section === "alumnos" && !selectedStudent && (
           <section className="panel">
             <h2>Alumnos</h2>
-            <input
-              className="search-input"
-              placeholder="Buscar alumno por nombre"
-              value={searchStudents}
-              onChange={(event) => setSearchStudents(event.target.value)}
-            />
+            <input className="search-input" placeholder="Buscar alumno por nombre" value={searchStudents} onChange={(e) => setSearchStudents(e.target.value)} />
             <div className="card-grid">
               {filteredStudents.map((student) => (
                 <button key={student.id} className="student-card" onClick={() => setSelectedStudentId(student.id)}>
@@ -177,9 +145,7 @@ function App() {
 
         {!loading && !error && section === "alumnos" && selectedStudent && (
           <section className="panel">
-            <button className="small-btn" onClick={() => setSelectedStudentId(null)}>
-              ← Volver a alumnos
-            </button>
+            <button className="small-btn" onClick={() => setSelectedStudentId(null)}>← Volver a alumnos</button>
             <div className="detail-header">
               <img src={selectedStudent.PhotoURL || "/logo192.png"} alt={selectedStudent.Name} />
               <div>
@@ -189,7 +155,7 @@ function App() {
             </div>
 
             <h3>Restaurantes en los que ha trabajado</h3>
-            <ul>
+            <ul className="spaced-list">
               {(jobsByStudentId[selectedStudent.id] || []).map((job, index) => (
                 <li key={`${selectedStudent.id}-${index}`}>
                   <button
@@ -202,10 +168,7 @@ function App() {
                   >
                     {job.restaurant?.Name || "Restaurante no encontrado"}
                   </button>
-                  {" · "}
-                  {job.role || "Sin rol"}
-                  {" · "}
-                  {job.currentJob ? "En activo" : "Histórico"}
+                  <span> · {job.currentJob ? "Activo" : "No activo"}</span>
                 </li>
               ))}
             </ul>
@@ -215,23 +178,13 @@ function App() {
         {!loading && !error && section === "restaurantes" && !selectedRestaurant && (
           <section className="panel">
             <h2>Restaurantes</h2>
-            <input
-              className="search-input"
-              placeholder="Buscar restaurante por nombre"
-              value={searchRestaurants}
-              onChange={(event) => setSearchRestaurants(event.target.value)}
-            />
-
+            <input className="search-input" placeholder="Buscar restaurante por nombre" value={searchRestaurants} onChange={(e) => setSearchRestaurants(e.target.value)} />
             <div className="restaurant-layout">
               <ul className="restaurant-list">
                 {filteredRestaurants.map((restaurant) => (
                   <li key={restaurant.id}>
-                    <button className="link-title" onClick={() => setSelectedRestaurantId(restaurant.id)}>
-                      {restaurant.Name}
-                    </button>
-                    <p>
-                      Lat: {restaurant.Location?.lat ?? "-"} | Lng: {restaurant.Location?.lng ?? "-"}
-                    </p>
+                    <button className="link-title" onClick={() => setSelectedRestaurantId(restaurant.id)}>{restaurant.Name}</button>
+                    <p>ID: {restaurant.id}</p>
                   </li>
                 ))}
               </ul>
@@ -242,16 +195,15 @@ function App() {
 
         {!loading && !error && section === "restaurantes" && selectedRestaurant && (
           <section className="panel">
-            <button className="small-btn" onClick={() => setSelectedRestaurantId(null)}>
-              ← Volver a restaurantes
-            </button>
+            <button className="small-btn" onClick={() => setSelectedRestaurantId(null)}>← Volver a restaurantes</button>
             <h2>{selectedRestaurant.Name}</h2>
-            <p>
-              Coordenadas: {selectedRestaurant.Location?.lat ?? "-"}, {selectedRestaurant.Location?.lng ?? "-"}
-            </p>
+            <p>ID: {selectedRestaurant.id}</p>
+            <div className="detail-map-wrap">
+              <LeafletRestaurantMap restaurants={[selectedRestaurant]} forceCenter />
+            </div>
 
-            <h3>Alumnos que han trabajado aquí</h3>
-            <ul>
+            <h3>Alumnos que trabajan o han trabajado aquí</h3>
+            <ul className="spaced-list">
               {(jobsByRestaurantId[selectedRestaurant.id] || []).map((job, index) => (
                 <li key={`${selectedRestaurant.id}-${index}`}>
                   <button
@@ -264,10 +216,7 @@ function App() {
                   >
                     {job.student?.Name || "Alumno no encontrado"}
                   </button>
-                  {" · "}
-                  {job.role || "Sin rol"}
-                  {" · "}
-                  {job.currentJob ? "En activo" : "Histórico"}
+                  <span> · {job.currentJob ? "Activo" : "No activo"}</span>
                 </li>
               ))}
             </ul>
@@ -282,60 +231,39 @@ function App() {
 
 function AuthPanel({ authMode, setAuthMode }) {
   return (
-    <section className="panel auth-panel">
+    <section className="panel">
       <h2>{authMode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2>
       <div className="auth-tabs">
-        <button className={authMode === "login" ? "active" : ""} onClick={() => setAuthMode("login")}>
-          Login
-        </button>
-        <button className={authMode === "register" ? "active" : ""} onClick={() => setAuthMode("register")}>
-          Registro
-        </button>
+        <button className={authMode === "login" ? "active" : ""} onClick={() => setAuthMode("login")}>Login</button>
+        <button className={authMode === "register" ? "active" : ""} onClick={() => setAuthMode("register")}>Registro</button>
       </div>
-
       <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
         {authMode === "register" && <input placeholder="Nombre completo" />}
         <input type="email" placeholder="Correo" />
         <input type="password" placeholder="Contraseña" />
-        <button type="submit" className="primary-btn">
-          {authMode === "login" ? "Entrar" : "Crear cuenta"}
-        </button>
+        <button type="submit" className="primary-btn">{authMode === "login" ? "Entrar" : "Crear cuenta"}</button>
       </form>
-      <p className="subtle-text">Pantalla básica de ejemplo (sin backend de autenticación todavía).</p>
     </section>
   );
 }
 
-function LeafletRestaurantMap({ restaurants }) {
+function LeafletRestaurantMap({ restaurants, forceCenter = false }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
 
   const points = useMemo(
-    () =>
-      restaurants
-        .filter(
-          (restaurant) =>
-            restaurant.Location &&
-            Number.isFinite(restaurant.Location.lat) &&
-            Number.isFinite(restaurant.Location.lng)
-        )
-        .map((restaurant) => ({
-          id: restaurant.id,
-          name: restaurant.Name,
-          lat: restaurant.Location.lat,
-          lng: restaurant.Location.lng
-        })),
+    () => restaurants
+      .filter((r) => r.Location && Number.isFinite(r.Location.lat) && Number.isFinite(r.Location.lng))
+      .map((r) => ({ id: r.id, name: r.Name, lat: r.Location.lat, lng: r.Location.lng })),
     [restaurants]
   );
 
   useEffect(() => {
     let cancelled = false;
-
     async function renderMap() {
       const container = mapContainerRef.current;
       if (!container) return;
-
       const L = await loadLeaflet();
       if (cancelled || !container) return;
 
@@ -345,7 +273,6 @@ function LeafletRestaurantMap({ restaurants }) {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mapRef.current);
-
         markerLayerRef.current = L.layerGroup().addTo(mapRef.current);
       }
 
@@ -361,26 +288,21 @@ function LeafletRestaurantMap({ restaurants }) {
 
       const bounds = [];
       points.forEach((point) => {
-        const marker = L.marker([point.lat, point.lng]).addTo(markerLayer);
-        marker.bindPopup(`<strong>${point.name}</strong><br/>${point.lat}, ${point.lng}`);
+        L.marker([point.lat, point.lng]).addTo(markerLayer).bindPopup(`<strong>${point.name}</strong>`);
         bounds.push([point.lat, point.lng]);
       });
 
-      if (bounds.length === 1) {
-        map.setView(bounds[0], 13);
+      if (points.length === 1 || forceCenter) {
+        map.setView([points[0].lat, points[0].lng], 14);
       } else {
         map.fitBounds(bounds, { padding: [30, 30] });
       }
-
       requestAnimationFrame(() => map.invalidateSize());
     }
 
     renderMap();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [points]);
+    return () => { cancelled = true; };
+  }, [points, forceCenter]);
 
   return <div ref={mapContainerRef} className="map-box" aria-label="Mapa de restaurantes" />;
 }
@@ -388,7 +310,6 @@ function LeafletRestaurantMap({ restaurants }) {
 let leafletPromise;
 async function loadLeaflet() {
   if (window.L) return window.L;
-
   if (!leafletPromise) {
     leafletPromise = new Promise((resolve, reject) => {
       if (!document.querySelector("link[data-leaflet]")) {
@@ -418,23 +339,14 @@ async function loadLeaflet() {
       document.body.appendChild(script);
     });
   }
-
   return leafletPromise;
 }
 
 function buildFirestoreUrl(collectionName) {
-  if (!FIRESTORE_PROJECT_ID) {
-    throw new Error("Falta REACT_APP_FIREBASE_PROJECT_ID en el .env");
-  }
+  if (!FIRESTORE_PROJECT_ID) throw new Error("Falta REACT_APP_FIREBASE_PROJECT_ID en el .env");
 
-  const url = new URL(
-    `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/${collectionName}`
-  );
-
-  if (FIRESTORE_API_KEY) {
-    url.searchParams.set("key", FIRESTORE_API_KEY);
-  }
-
+  const url = new URL(`https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/${collectionName}`);
+  if (FIRESTORE_API_KEY) url.searchParams.set("key", FIRESTORE_API_KEY);
   return url.toString();
 }
 
@@ -451,34 +363,20 @@ function parseDocument(document) {
     acc[fieldName] = parseFirestoreField(fieldValue);
     return acc;
   }, {});
-
   return { id, ...parsedFields };
 }
 
 function parseFirestoreField(fieldValue) {
   if (fieldValue.stringValue !== undefined) return fieldValue.stringValue;
   if (fieldValue.booleanValue !== undefined) return fieldValue.booleanValue;
-
   if (fieldValue.doubleValue !== undefined || fieldValue.integerValue !== undefined) {
     return Number(fieldValue.doubleValue ?? fieldValue.integerValue);
   }
-
   if (fieldValue.geoPointValue) {
-    return {
-      lat: Number(fieldValue.geoPointValue.latitude),
-      lng: Number(fieldValue.geoPointValue.longitude)
-    };
+    return { lat: Number(fieldValue.geoPointValue.latitude), lng: Number(fieldValue.geoPointValue.longitude) };
   }
-
-  if (fieldValue.referenceValue) {
-    return fieldValue.referenceValue.split("/").pop();
-  }
-
-  if (fieldValue.arrayValue) {
-    const values = fieldValue.arrayValue.values || [];
-    return values.map(parseFirestoreField);
-  }
-
+  if (fieldValue.referenceValue) return fieldValue.referenceValue.split("/").pop();
+  if (fieldValue.arrayValue) return (fieldValue.arrayValue.values || []).map(parseFirestoreField);
   return null;
 }
 

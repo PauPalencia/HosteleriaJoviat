@@ -4,9 +4,11 @@
 
 body {
   margin: 0;
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
-  background: radial-gradient(circle at top left, #ffe8f3, #eaf4ff 45%, #eefcf6);
-  color: #1f2937;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f3f4f6;
+  color: #111;
+  font-size: 18px;
+  line-height: 1.55;
 }
 
 .layout {
@@ -16,74 +18,85 @@ body {
 }
 
 .sidebar {
-  background: linear-gradient(180deg, #7c3aed, #2563eb);
-  color: white;
-  padding: 1.2rem;
+  background: #000;
+  color: #fff;
+  padding: 1.4rem;
   position: sticky;
   top: 0;
   height: 100vh;
 }
 
 .sidebar h1 {
-  margin: 0 0 1.2rem;
-  font-size: 1.3rem;
+  margin: 0 0 1.4rem;
+  font-size: 2rem;
+  letter-spacing: 0.08em;
 }
 
 .sidebar nav {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.7rem;
 }
 
 .sidebar button {
-  border: 0;
-  border-radius: 12px;
-  padding: 0.75rem 0.9rem;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
   text-align: left;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  font-weight: 600;
+  background: #111;
+  color: #fff;
+  font-size: 1rem;
 }
 
 .sidebar button.active,
 .sidebar button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #fff;
+  color: #000;
 }
 
 .content {
-  padding: 1.3rem;
+  padding: 1.6rem;
 }
 
 .panel {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(51, 65, 85, 0.12);
-  padding: 1.1rem;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  padding: 1.4rem;
+}
+
+.panel h2,
+.panel h3,
+.panel p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.state-text {
+  margin-bottom: 1rem;
 }
 
 .search-input,
 .auth-form input {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1px solid #9ca3af;
   border-radius: 10px;
-  padding: 0.7rem;
-  margin-bottom: 0.9rem;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
 }
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .student-card {
-  border: 0;
-  border-radius: 14px;
-  background: white;
-  padding: 0.8rem;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.9rem;
   cursor: pointer;
   text-align: left;
 }
@@ -91,10 +104,11 @@ body {
 .student-card img,
 .detail-header img {
   width: 100%;
-  max-width: 170px;
+  max-width: 190px;
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 10px;
+  margin-bottom: 0.5rem;
 }
 
 .restaurant-layout {
@@ -110,32 +124,45 @@ body {
 }
 
 .restaurant-list li {
-  background: #ffffff;
+  background: #fff;
+  border: 1px solid #d1d5db;
   border-radius: 12px;
-  margin-bottom: 0.7rem;
-  padding: 0.8rem;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  margin-bottom: 0.8rem;
+  padding: 0.9rem;
 }
 
 .map-box {
   height: 430px;
-  border-radius: 14px;
-  border: 2px solid #c7d2fe;
+  border-radius: 12px;
+  border: 1px solid #9ca3af;
   overflow: hidden;
-  background: #dbeafe;
+  background: #e5e7eb;
+}
+
+.detail-map-wrap {
+  margin: 1rem 0 1.2rem;
 }
 
 .detail-header {
   display: flex;
-  gap: 1rem;
+  gap: 1.2rem;
   align-items: center;
+  margin-bottom: 1rem;
+}
+
+.spaced-list {
+  padding-left: 1.2rem;
+}
+
+.spaced-list li {
+  margin-bottom: 0.7rem;
 }
 
 .link-title,
 .inline-link {
   border: none;
   background: none;
-  color: #2563eb;
+  color: #000;
   text-decoration: underline;
   cursor: pointer;
   font: inherit;
@@ -155,36 +182,34 @@ body {
 .small-btn,
 .auth-tabs button,
 .primary-btn {
-  border: 0;
+  border: 1px solid #9ca3af;
   border-radius: 10px;
-  padding: 0.55rem 0.9rem;
+  padding: 0.6rem 1rem;
   cursor: pointer;
+  background: #fff;
+  color: #000;
+  font-size: 1rem;
 }
 
 .small-btn {
-  background: #e2e8f0;
-  margin-bottom: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .auth-tabs {
   display: flex;
-  gap: 0.55rem;
-  margin-bottom: 0.8rem;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
 }
 
 .auth-tabs button.active,
 .primary-btn {
-  background: #7c3aed;
-  color: white;
+  background: #000;
+  color: #fff;
+  border-color: #000;
 }
 
 .auth-form {
-  max-width: 420px;
-}
-
-.subtle-text {
-  color: #64748b;
-  font-size: 0.92rem;
+  max-width: 460px;
 }
 
 .error-box {
@@ -192,10 +217,10 @@ body {
   border: 1px solid #fca5a5;
   color: #991b1b;
   border-radius: 10px;
-  padding: 0.75rem;
+  padding: 0.9rem;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
   }
