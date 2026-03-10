@@ -108,7 +108,7 @@ function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <h1>JOVIAT</h1>
+        <h1>Joviat</h1>
         <nav>
           <button onClick={() => goSection("inicio")} className={section === "inicio" ? "active" : ""}>Inicio</button>
           <button onClick={() => goSection("alumnos")} className={section === "alumnos" ? "active" : ""}>Alumnos</button>
