@@ -37,3 +37,10 @@ typings/
 
 # Yarn Integrity file
 .yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# firebase
+.firebase/
+.FirebaseConfig.js
