@@ -1,65 +1,91 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  background: radial-gradient(circle at top left, #ffe8f3, #eaf4ff 45%, #eefcf6);
+  color: #1f2937;
 }
 
-.app-shell {
+.layout {
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
 }
 
-.topbar {
-  background: #111;
-  color: #fff;
-  padding: 1rem;
+.sidebar {
+  background: linear-gradient(180deg, #7c3aed, #2563eb);
+  color: white;
+  padding: 1.2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
-.main-content {
-  padding: 1rem;
-  max-width: 1100px;
-  margin: 0 auto;
+.sidebar h1 {
+  margin: 0 0 1.2rem;
+  font-size: 1.3rem;
 }
 
-.tabs {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+.sidebar nav {
+  display: grid;
+  gap: 0.6rem;
 }
 
-.tabs button,
-.back-button {
+.sidebar button {
   border: 0;
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  text-align: left;
   cursor: pointer;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 600;
 }
 
-.tabs button.active {
-  background: #111;
-  color: #fff;
+.sidebar button.active,
+.sidebar button:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.search-input {
+.content {
+  padding: 1.3rem;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(51, 65, 85, 0.12);
+  padding: 1.1rem;
+}
+
+.search-input,
+.auth-form input {
   width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
   padding: 0.7rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.9rem;
 }
 
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: 0.9rem;
 }
 
 .student-card {
   border: 0;
-  border-radius: 12px;
-  background: #fff;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  background: white;
+  padding: 0.8rem;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
   cursor: pointer;
+  text-align: left;
 }
 
 .student-card img,
@@ -73,7 +99,7 @@ body {
 
 .restaurant-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.2fr;
   gap: 1rem;
 }
 
@@ -84,24 +110,19 @@ body {
 }
 
 .restaurant-list li {
-  background: #fff;
-  border-radius: 10px;
+  background: #ffffff;
+  border-radius: 12px;
   margin-bottom: 0.7rem;
   padding: 0.8rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .map-box {
-  height: 420px;
-  border-radius: 12px;
-  border: 1px solid #9fd3f3;
+  height: 430px;
+  border-radius: 14px;
+  border: 2px solid #c7d2fe;
   overflow: hidden;
-  background: #d5ecfa;
-}
-
-.detail-box {
-  background: #fff;
-  padding: 1rem;
-  border-radius: 10px;
+  background: #dbeafe;
 }
 
 .detail-header {
@@ -110,21 +131,13 @@ body {
   align-items: center;
 }
 
-.error-box {
-  color: #9a1e1e;
-  background: #ffe6e6;
-  border: 1px solid #f2b6b6;
-  border-radius: 8px;
-  padding: 0.75rem;
-}
-
 .link-title,
 .inline-link {
   border: none;
   background: none;
-  color: #0a58ca;
-  cursor: pointer;
+  color: #2563eb;
   text-decoration: underline;
+  cursor: pointer;
   font: inherit;
   padding: 0;
 }
@@ -139,7 +152,59 @@ body {
   text-decoration: none;
 }
 
-@media (max-width: 768px) {
+.small-btn,
+.auth-tabs button,
+.primary-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
+.small-btn {
+  background: #e2e8f0;
+  margin-bottom: 0.8rem;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.auth-tabs button.active,
+.primary-btn {
+  background: #7c3aed;
+  color: white;
+}
+
+.auth-form {
+  max-width: 420px;
+}
+
+.subtle-text {
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.error-box {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
   .restaurant-layout {
     grid-template-columns: 1fr;
   }
