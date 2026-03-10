@@ -1,8 +1,20 @@
 import { render, screen } from '@testing-library/react';
-import App from './App';
 
-test('renders learn react link', () => {
+afterEach(() => {
+  jest.restoreAllMocks();
+  jest.resetModules();
+});
+
+test('renders sidebar title', async () => {
+  process.env.REACT_APP_FIREBASE_PROJECT_ID = 'demo-project';
+
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ documents: [] })
+  });
+
+  const App = require('./App').default;
+
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(await screen.findByText(/Hostelería/i)).toBeInTheDocument();
 });
