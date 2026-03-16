@@ -29,7 +29,6 @@ function App() {
           fetchCollection("Restaurante"),
           fetchCollection("Res-Alum")
         ]);
-
         setStudents(studentsData);
         setRestaurants(restaurantsData);
         setRelations(relationsData);
@@ -52,7 +51,7 @@ function App() {
   const jobsByStudentId = useMemo(() => {
     const map = {};
     relations.forEach((relation) => {
-      const alumniIds = ensureArray(relation.id_alumnos || relation.id_alumni);
+      const alumniIds = ensureArray(relation.id_alumni || relation.id_alumnos || relation.id_alumni);
       const restaurantIds = ensureArray(relation.id_restaurant);
 
       alumniIds.forEach((alumniId) => {
@@ -60,7 +59,7 @@ function App() {
         restaurantIds.forEach((restaurantId) => {
           map[alumniId].push({
             role: relation.rol,
-            currentJob: Boolean(relation.currentjob),
+            currentJob: getCurrentJobFlag(relation),
             restaurant: restaurantById[restaurantId] || null
           });
         });
@@ -72,7 +71,7 @@ function App() {
   const jobsByRestaurantId = useMemo(() => {
     const map = {};
     relations.forEach((relation) => {
-      const alumniIds = ensureArray(relation.id_alumnos || relation.id_alumni);
+      const alumniIds = ensureArray(relation.id_alumni || relation.id_alumnos || relation.id_alumni);
       const restaurantIds = ensureArray(relation.id_restaurant);
 
       restaurantIds.forEach((restaurantId) => {
@@ -80,7 +79,7 @@ function App() {
         alumniIds.forEach((alumniId) => {
           map[restaurantId].push({
             role: relation.rol,
-            currentJob: Boolean(relation.currentjob),
+            currentJob: getCurrentJobFlag(relation),
             student: studentById[alumniId] || null
           });
         });
@@ -93,9 +92,9 @@ function App() {
     const summary = {};
     students.forEach((student) => {
       const jobs = jobsByStudentId[student.id] || [];
-      const isExAlumni = jobs.length > 0;
       const hasCurrentJob = jobs.some((job) => job.currentJob);
-      summary[student.id] = { isExAlumni, hasCurrentJob };
+      const alumniType = student.Alumni || (jobs.length > 0 ? "Exalumno" : "Alumno");
+      summary[student.id] = { alumniType, hasCurrentJob };
     });
     return summary;
   }, [students, jobsByStudentId]);
@@ -103,7 +102,6 @@ function App() {
   const filteredStudents = students.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
   );
-
   const filteredRestaurants = restaurants.filter((restaurant) =>
     restaurant.Name?.toLowerCase().includes(searchRestaurants.toLowerCase())
   );
@@ -143,22 +141,16 @@ function App() {
         {!loading && !error && section === "alumnos" && !selectedStudent && (
           <section className="panel">
             <h2>Alumnos</h2>
-            <SearchInput
-              value={searchStudents}
-              onChange={setSearchStudents}
-              placeholder="Buscar alumno por nombre"
-            />
+            <SearchInput value={searchStudents} onChange={setSearchStudents} placeholder="Buscar alumno por nombre" />
             <div className="card-grid">
               {filteredStudents.map((student) => {
-                const summary = studentSummaryById[student.id] || { isExAlumni: false, hasCurrentJob: false };
+                const summary = studentSummaryById[student.id] || { alumniType: "Alumno", hasCurrentJob: false };
                 return (
                   <button key={student.id} className="student-card" onClick={() => setSelectedStudentId(student.id)}>
                     <img src={student.PhotoURL || "/logo192.png"} alt={student.Name} />
                     <h3>{student.Name}</h3>
                     <div className="badge-row">
-                      <span className={`badge ${summary.isExAlumni ? "badge-dark" : "badge-light"}`}>
-                        {summary.isExAlumni ? "Exalumno" : "Alumno"}
-                      </span>
+                      <span className="badge badge-dark">{summary.alumniType}</span>
                       <span className={`badge ${summary.hasCurrentJob ? "badge-green" : "badge-gray"}`}>
                         {summary.hasCurrentJob ? "Trabajando ahora" : "Sin trabajo activo"}
                       </span>
@@ -179,15 +171,17 @@ function App() {
                 <h2>{selectedStudent.Name}</h2>
                 <p>ID: {selectedStudent.id}</p>
                 <div className="badge-row">
-                  <span className={`badge ${(studentSummaryById[selectedStudent.id]?.isExAlumni ? "badge-dark" : "badge-light")}`}>
-                    {studentSummaryById[selectedStudent.id]?.isExAlumni ? "Exalumno" : "Alumno"}
-                  </span>
-                  <span className={`badge ${(studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "badge-green" : "badge-gray")}`}>
+                  <span className="badge badge-dark">{studentSummaryById[selectedStudent.id]?.alumniType || "Alumno"}</span>
+                  <span className={`badge ${studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "badge-green" : "badge-gray"}`}>
                     {studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "Trabajando actualmente" : "No está trabajando actualmente"}
                   </span>
                 </div>
               </div>
             </div>
+
+            <section className="kv-grid">
+              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "Alumni"]) }
+            </section>
 
             <h3>Restaurantes en los que ha trabajado</h3>
             <ul className="spaced-list">
@@ -215,19 +209,13 @@ function App() {
         {!loading && !error && section === "restaurantes" && !selectedRestaurant && (
           <section className="panel">
             <h2>Restaurantes</h2>
-            <SearchInput
-              value={searchRestaurants}
-              onChange={setSearchRestaurants}
-              placeholder="Buscar restaurante por nombre"
-            />
+            <SearchInput value={searchRestaurants} onChange={setSearchRestaurants} placeholder="Buscar restaurante por nombre" />
             <div className="restaurant-layout">
               <div className="restaurant-list-scroll">
                 <ul className="restaurant-list">
                   {filteredRestaurants.map((restaurant) => (
                     <li key={restaurant.id}>
-                      <button className="link-btn" onClick={() => setSelectedRestaurantId(restaurant.id)}>
-                        {restaurant.Name}
-                      </button>
+                      <button className="link-btn" onClick={() => setSelectedRestaurantId(restaurant.id)}>{restaurant.Name}</button>
                       <p>ID: {restaurant.id}</p>
                     </li>
                   ))}
@@ -249,10 +237,14 @@ function App() {
               <LeafletRestaurantMap restaurants={[selectedRestaurant]} forceCenter />
             </div>
 
+            <section className="kv-grid">
+              {renderEntityFields(selectedRestaurant, ["id", "Name", "Location"]) }
+            </section>
+
             <h3>Alumnos que trabajan o han trabajado aquí</h3>
             <ul className="spaced-list">
               {(jobsByRestaurantId[selectedRestaurant.id] || []).map((job, index) => {
-                const summary = studentSummaryById[job.student?.id] || { isExAlumni: true, hasCurrentJob: false };
+                const summary = studentSummaryById[job.student?.id] || { alumniType: "Alumno", hasCurrentJob: false };
                 return (
                   <li key={`${selectedRestaurant.id}-${index}`} className="line-item">
                     <button
@@ -265,9 +257,7 @@ function App() {
                     >
                       {job.student?.Name || "Alumno no encontrado"}
                     </button>
-                    <span className={`badge ${summary.isExAlumni ? "badge-dark" : "badge-light"}`}>
-                      {summary.isExAlumni ? "Exalumno" : "Alumno"}
-                    </span>
+                    <span className="badge badge-dark">{summary.alumniType}</span>
                     <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
                       {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
                     </span>
@@ -282,6 +272,27 @@ function App() {
       </main>
     </div>
   );
+}
+
+function renderEntityFields(entity, excludedKeys) {
+  return Object.entries(entity)
+    .filter(([key]) => !excludedKeys.includes(key))
+    .map(([key, value]) => {
+      let printableValue = value;
+      if (value && typeof value === "object") {
+        printableValue = JSON.stringify(value);
+      }
+      return (
+        <div className="kv-item" key={key}>
+          <strong>{key}</strong>
+          <span>{String(printableValue)}</span>
+        </div>
+      );
+    });
+}
+
+function getCurrentJobFlag(relation) {
+  return Boolean(relation.current_job ?? relation.currentjob);
 }
 
 function SearchInput({ value, onChange, placeholder }) {
@@ -455,5 +466,3 @@ function ensureArray(value) {
 }
 
 export default App;
-
-
