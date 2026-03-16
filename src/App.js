@@ -90,7 +90,7 @@ function App() {
     students.forEach((student) => {
       const jobs = jobsByStudentId[student.id] || [];
       summary[student.id] = {
-        alumniType: student.Alumni || (jobs.length > 0 ? "Exalumno" : "Alumno"),
+        alumniType: normalizeStatus(student.status),
         hasCurrentJob: jobs.some((job) => job.currentJob)
       };
     });
@@ -176,7 +176,7 @@ function App() {
             </div>
 
             <section className="kv-grid">
-              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "Alumni"])}
+              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "status"])}
             </section>
 
             <h3>Restaurantes en los que ha trabajado</h3>
@@ -482,6 +482,17 @@ function parseFirestoreField(fieldValue) {
   if (fieldValue.referenceValue) return fieldValue.referenceValue.split("/").pop();
   if (fieldValue.arrayValue) return (fieldValue.arrayValue.values || []).map(parseFirestoreField);
   return null;
+}
+
+function normalizeStatus(statusValue) {
+  const raw = String(statusValue || "").trim();
+  if (!raw) return "Sin status";
+
+  const lower = raw.toLowerCase();
+  if (lower === "alumne" || lower === "alumno" || lower === "alumna") return "Alumno";
+  if (lower === "exalumne" || lower === "exalumno" || lower === "exalumna") return "Exalumno";
+
+  return raw;
 }
 
 function ensureArray(value) {
