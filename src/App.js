@@ -90,7 +90,7 @@ function App() {
     students.forEach((student) => {
       const jobs = jobsByStudentId[student.id] || [];
       summary[student.id] = {
-        alumniType: normalizeStatus(student.status),
+        alumniType: normalizeStatus(student.Status ?? student.status),
         hasCurrentJob: jobs.some((job) => job.currentJob)
       };
     });
@@ -176,7 +176,7 @@ function App() {
             </div>
 
             <section className="kv-grid">
-              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "status"])}
+              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "Status", "status"])}
             </section>
 
             <h3>Restaurantes en los que ha trabajado</h3>
