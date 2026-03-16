@@ -51,7 +51,7 @@ function App() {
   const jobsByStudentId = useMemo(() => {
     const map = {};
     relations.forEach((relation) => {
-      const alumniIds = ensureArray(relation.id_alumni || relation.id_alumnos || relation.id_alumni);
+      const alumniIds = ensureArray(relation.id_alumni || relation.id_alumnos);
       const restaurantIds = ensureArray(relation.id_restaurant);
 
       alumniIds.forEach((alumniId) => {
@@ -71,7 +71,7 @@ function App() {
   const jobsByRestaurantId = useMemo(() => {
     const map = {};
     relations.forEach((relation) => {
-      const alumniIds = ensureArray(relation.id_alumni || relation.id_alumnos || relation.id_alumni);
+      const alumniIds = ensureArray(relation.id_alumni || relation.id_alumnos);
       const restaurantIds = ensureArray(relation.id_restaurant);
 
       restaurantIds.forEach((restaurantId) => {
@@ -92,9 +92,10 @@ function App() {
     const summary = {};
     students.forEach((student) => {
       const jobs = jobsByStudentId[student.id] || [];
-      const hasCurrentJob = jobs.some((job) => job.currentJob);
-      const alumniType = student.Alumni || (jobs.length > 0 ? "Exalumno" : "Alumno");
-      summary[student.id] = { alumniType, hasCurrentJob };
+      summary[student.id] = {
+        alumniType: student.Alumni || (jobs.length > 0 ? "Exalumno" : "Alumno"),
+        hasCurrentJob: jobs.some((job) => job.currentJob)
+      };
     });
     return summary;
   }, [students, jobsByStudentId]);
@@ -145,8 +146,10 @@ function App() {
             <div className="card-grid">
               {filteredStudents.map((student) => {
                 const summary = studentSummaryById[student.id] || { alumniType: "Alumno", hasCurrentJob: false };
+                const jobs = jobsByStudentId[student.id] || [];
+
                 return (
-                  <button key={student.id} className="student-card" onClick={() => setSelectedStudentId(student.id)}>
+                  <article key={student.id} className="student-card">
                     <img src={student.PhotoURL || "/logo192.png"} alt={student.Name} />
                     <h3>{student.Name}</h3>
                     <div className="badge-row">
@@ -155,7 +158,25 @@ function App() {
                         {summary.hasCurrentJob ? "Trabajando ahora" : "Sin trabajo activo"}
                       </span>
                     </div>
-                  </button>
+                    <button className="small-btn" onClick={() => setSelectedStudentId(student.id)}>
+                      Ver ficha completa
+                    </button>
+
+                    {jobs.length > 0 && (
+                      <div className="student-work-list">
+                        {jobs.map((job, index) => (
+                          <RestaurantWorkPreview
+                            key={`${student.id}-${index}`}
+                            job={job}
+                            onOpenRestaurant={() => {
+                              setSection("restaurantes");
+                              setSelectedRestaurantId(job.restaurant?.id || null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </article>
                 );
               })}
             </div>
@@ -170,17 +191,11 @@ function App() {
               <div>
                 <h2>{selectedStudent.Name}</h2>
                 <p>ID: {selectedStudent.id}</p>
-                <div className="badge-row">
-                  <span className="badge badge-dark">{studentSummaryById[selectedStudent.id]?.alumniType || "Alumno"}</span>
-                  <span className={`badge ${studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "badge-green" : "badge-gray"}`}>
-                    {studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "Trabajando actualmente" : "No está trabajando actualmente"}
-                  </span>
-                </div>
               </div>
             </div>
 
             <section className="kv-grid">
-              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "Alumni"]) }
+              {renderEntityFields(selectedStudent, ["id", "Name", "PhotoURL", "Alumni"])}
             </section>
 
             <h3>Restaurantes en los que ha trabajado</h3>
@@ -197,6 +212,7 @@ function App() {
                   >
                     {job.restaurant?.Name || "Restaurante no encontrado"}
                   </button>
+                  <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
                   <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
                     {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
                   </span>
@@ -238,13 +254,13 @@ function App() {
             </div>
 
             <section className="kv-grid">
-              {renderEntityFields(selectedRestaurant, ["id", "Name", "Location"]) }
+              {renderEntityFields(selectedRestaurant, ["id", "Name", "Location"])}
             </section>
 
             <h3>Alumnos que trabajan o han trabajado aquí</h3>
             <ul className="spaced-list">
               {(jobsByRestaurantId[selectedRestaurant.id] || []).map((job, index) => {
-                const summary = studentSummaryById[job.student?.id] || { alumniType: "Alumno", hasCurrentJob: false };
+                const summary = studentSummaryById[job.student?.id] || { alumniType: "Alumno" };
                 return (
                   <li key={`${selectedRestaurant.id}-${index}`} className="line-item">
                     <button
@@ -258,6 +274,7 @@ function App() {
                       {job.student?.Name || "Alumno no encontrado"}
                     </button>
                     <span className="badge badge-dark">{summary.alumniType}</span>
+                    <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
                     <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
                       {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
                     </span>
@@ -274,14 +291,46 @@ function App() {
   );
 }
 
+function RestaurantWorkPreview({ job, onOpenRestaurant }) {
+  const location = job.restaurant?.Location;
+  return (
+    <div className="work-preview">
+      <div className="work-preview-map">
+        {location ? (
+          <iframe
+            title={`Mapa de ${job.restaurant?.Name || "restaurante"}`}
+            loading="lazy"
+            src={buildEmbedMapUrl(location.lat, location.lng)}
+          />
+        ) : (
+          <div className="map-fallback">Sin coordenadas</div>
+        )}
+      </div>
+      <div className="work-preview-info">
+        <button className="link-btn" onClick={onOpenRestaurant} disabled={!job.restaurant?.id}>
+          {job.restaurant?.Name || "Restaurante no encontrado"}
+        </button>
+        <p><strong>Cargo:</strong> {job.role || "Sin rol"}</p>
+        <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
+          {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function buildEmbedMapUrl(lat, lng) {
+  const delta = 0.01;
+  const bbox = `${lng - delta}%2C${lat - delta}%2C${lng + delta}%2C${lat + delta}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+}
+
 function renderEntityFields(entity, excludedKeys) {
   return Object.entries(entity)
     .filter(([key]) => !excludedKeys.includes(key))
     .map(([key, value]) => {
       let printableValue = value;
-      if (value && typeof value === "object") {
-        printableValue = JSON.stringify(value);
-      }
+      if (value && typeof value === "object") printableValue = JSON.stringify(value);
       return (
         <div className="kv-item" key={key}>
           <strong>{key}</strong>
@@ -380,7 +429,9 @@ function LeafletRestaurantMap({ restaurants, forceCenter = false }) {
     }
 
     renderMap();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [points, forceCenter]);
 
   return <div ref={mapContainerRef} className="map-box" aria-label="Mapa de restaurantes" />;
