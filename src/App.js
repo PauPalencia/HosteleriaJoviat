@@ -5,8 +5,6 @@ const FIRESTORE_PROJECT_ID = process.env.REACT_APP_FIREBASE_PROJECT_ID;
 const FIRESTORE_DATABASE_ID = process.env.REACT_APP_FIREBASE_DATABASE_ID || "(default)";
 const FIRESTORE_API_KEY = process.env.REACT_APP_FIREBASE_API_KEY;
 
-import HosteleriaApp from "./HosteleriaApp";
-
 function App() {
   const [section, setSection] = useState("inicio");
   const [searchStudents, setSearchStudents] = useState("");
@@ -91,9 +89,21 @@ function App() {
     return map;
   }, [relations, studentById]);
 
+  const studentSummaryById = useMemo(() => {
+    const summary = {};
+    students.forEach((student) => {
+      const jobs = jobsByStudentId[student.id] || [];
+      const isExAlumni = jobs.length > 0;
+      const hasCurrentJob = jobs.some((job) => job.currentJob);
+      summary[student.id] = { isExAlumni, hasCurrentJob };
+    });
+    return summary;
+  }, [students, jobsByStudentId]);
+
   const filteredStudents = students.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
   );
+
   const filteredRestaurants = restaurants.filter((restaurant) =>
     restaurant.Name?.toLowerCase().includes(searchRestaurants.toLowerCase())
   );
@@ -110,7 +120,7 @@ function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <h1>Joviat</h1>
+        <h1>JOVIAT</h1>
         <nav>
           <button onClick={() => goSection("inicio")} className={section === "inicio" ? "active" : ""}>Inicio</button>
           <button onClick={() => goSection("alumnos")} className={section === "alumnos" ? "active" : ""}>Alumnos</button>
@@ -133,14 +143,29 @@ function App() {
         {!loading && !error && section === "alumnos" && !selectedStudent && (
           <section className="panel">
             <h2>Alumnos</h2>
-            <input className="search-input" placeholder="Buscar alumno por nombre" value={searchStudents} onChange={(e) => setSearchStudents(e.target.value)} />
+            <SearchInput
+              value={searchStudents}
+              onChange={setSearchStudents}
+              placeholder="Buscar alumno por nombre"
+            />
             <div className="card-grid">
-              {filteredStudents.map((student) => (
-                <button key={student.id} className="student-card" onClick={() => setSelectedStudentId(student.id)}>
-                  <img src={student.PhotoURL || "/logo192.png"} alt={student.Name} />
-                  <h3>{student.Name}</h3>
-                </button>
-              ))}
+              {filteredStudents.map((student) => {
+                const summary = studentSummaryById[student.id] || { isExAlumni: false, hasCurrentJob: false };
+                return (
+                  <button key={student.id} className="student-card" onClick={() => setSelectedStudentId(student.id)}>
+                    <img src={student.PhotoURL || "/logo192.png"} alt={student.Name} />
+                    <h3>{student.Name}</h3>
+                    <div className="badge-row">
+                      <span className={`badge ${summary.isExAlumni ? "badge-dark" : "badge-light"}`}>
+                        {summary.isExAlumni ? "Exalumno" : "Alumno"}
+                      </span>
+                      <span className={`badge ${summary.hasCurrentJob ? "badge-green" : "badge-gray"}`}>
+                        {summary.hasCurrentJob ? "Trabajando ahora" : "Sin trabajo activo"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </section>
         )}
@@ -153,15 +178,23 @@ function App() {
               <div>
                 <h2>{selectedStudent.Name}</h2>
                 <p>ID: {selectedStudent.id}</p>
+                <div className="badge-row">
+                  <span className={`badge ${(studentSummaryById[selectedStudent.id]?.isExAlumni ? "badge-dark" : "badge-light")}`}>
+                    {studentSummaryById[selectedStudent.id]?.isExAlumni ? "Exalumno" : "Alumno"}
+                  </span>
+                  <span className={`badge ${(studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "badge-green" : "badge-gray")}`}>
+                    {studentSummaryById[selectedStudent.id]?.hasCurrentJob ? "Trabajando actualmente" : "No está trabajando actualmente"}
+                  </span>
+                </div>
               </div>
             </div>
 
             <h3>Restaurantes en los que ha trabajado</h3>
             <ul className="spaced-list">
               {(jobsByStudentId[selectedStudent.id] || []).map((job, index) => (
-                <li key={`${selectedStudent.id}-${index}`}>
+                <li key={`${selectedStudent.id}-${index}`} className="line-item">
                   <button
-                    className="inline-link"
+                    className="link-btn"
                     onClick={() => {
                       setSection("restaurantes");
                       setSelectedRestaurantId(job.restaurant?.id || null);
@@ -170,7 +203,9 @@ function App() {
                   >
                     {job.restaurant?.Name || "Restaurante no encontrado"}
                   </button>
-                  <span> · {job.currentJob ? "Activo" : "No activo"}</span>
+                  <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
+                    {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -180,17 +215,27 @@ function App() {
         {!loading && !error && section === "restaurantes" && !selectedRestaurant && (
           <section className="panel">
             <h2>Restaurantes</h2>
-            <input className="search-input" placeholder="Buscar restaurante por nombre" value={searchRestaurants} onChange={(e) => setSearchRestaurants(e.target.value)} />
+            <SearchInput
+              value={searchRestaurants}
+              onChange={setSearchRestaurants}
+              placeholder="Buscar restaurante por nombre"
+            />
             <div className="restaurant-layout">
-              <ul className="restaurant-list">
-                {filteredRestaurants.map((restaurant) => (
-                  <li key={restaurant.id}>
-                    <button className="link-title" onClick={() => setSelectedRestaurantId(restaurant.id)}>{restaurant.Name}</button>
-                    <p>ID: {restaurant.id}</p>
-                  </li>
-                ))}
-              </ul>
-              <LeafletRestaurantMap restaurants={filteredRestaurants} />
+              <div className="restaurant-list-scroll">
+                <ul className="restaurant-list">
+                  {filteredRestaurants.map((restaurant) => (
+                    <li key={restaurant.id}>
+                      <button className="link-btn" onClick={() => setSelectedRestaurantId(restaurant.id)}>
+                        {restaurant.Name}
+                      </button>
+                      <p>ID: {restaurant.id}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="map-sticky-wrap">
+                <LeafletRestaurantMap restaurants={filteredRestaurants} />
+              </div>
             </div>
           </section>
         )}
@@ -206,27 +251,48 @@ function App() {
 
             <h3>Alumnos que trabajan o han trabajado aquí</h3>
             <ul className="spaced-list">
-              {(jobsByRestaurantId[selectedRestaurant.id] || []).map((job, index) => (
-                <li key={`${selectedRestaurant.id}-${index}`}>
-                  <button
-                    className="inline-link"
-                    onClick={() => {
-                      setSection("alumnos");
-                      setSelectedStudentId(job.student?.id || null);
-                    }}
-                    disabled={!job.student?.id}
-                  >
-                    {job.student?.Name || "Alumno no encontrado"}
-                  </button>
-                  <span> · {job.currentJob ? "Activo" : "No activo"}</span>
-                </li>
-              ))}
+              {(jobsByRestaurantId[selectedRestaurant.id] || []).map((job, index) => {
+                const summary = studentSummaryById[job.student?.id] || { isExAlumni: true, hasCurrentJob: false };
+                return (
+                  <li key={`${selectedRestaurant.id}-${index}`} className="line-item">
+                    <button
+                      className="link-btn"
+                      onClick={() => {
+                        setSection("alumnos");
+                        setSelectedStudentId(job.student?.id || null);
+                      }}
+                      disabled={!job.student?.id}
+                    >
+                      {job.student?.Name || "Alumno no encontrado"}
+                    </button>
+                    <span className={`badge ${summary.isExAlumni ? "badge-dark" : "badge-light"}`}>
+                      {summary.isExAlumni ? "Exalumno" : "Alumno"}
+                    </span>
+                    <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
+                      {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
 
         {!loading && !error && section === "auth" && <AuthPanel authMode={authMode} setAuthMode={setAuthMode} />}
       </main>
+    </div>
+  );
+}
+
+function SearchInput({ value, onChange, placeholder }) {
+  return (
+    <div className="search-wrap">
+      <input className="search-input" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+      {value && (
+        <button className="search-clear-btn" onClick={() => onChange("")} aria-label="Limpiar búsqueda">
+          ×
+        </button>
+      )}
     </div>
   );
 }

@@ -76,6 +76,10 @@ body {
   margin-bottom: 1rem;
 }
 
+.search-wrap {
+  position: relative;
+}
+
 .search-input,
 .auth-form input {
   width: 100%;
@@ -84,6 +88,25 @@ body {
   padding: 0.8rem;
   margin-bottom: 1rem;
   font-size: 1rem;
+}
+
+.search-input {
+  padding-right: 2.7rem;
+}
+
+.search-clear-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .card-grid {
@@ -113,8 +136,19 @@ body {
 
 .restaurant-layout {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: minmax(320px, 1fr) 1.35fr;
   gap: 1rem;
+  align-items: start;
+}
+
+.restaurant-list-scroll {
+  max-height: 78vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 0.5rem;
+  background: #fafafa;
 }
 
 .restaurant-list {
@@ -131,8 +165,14 @@ body {
   padding: 0.9rem;
 }
 
+.map-sticky-wrap {
+  position: sticky;
+  top: 1rem;
+}
+
 .map-box {
-  height: 430px;
+  height: 78vh;
+  min-height: 520px;
   border-radius: 12px;
   border: 1px solid #9ca3af;
   overflow: hidden;
@@ -143,6 +183,11 @@ body {
   margin: 1rem 0 1.2rem;
 }
 
+.detail-map-wrap .map-box {
+  height: 68vh;
+  min-height: 420px;
+}
+
 .detail-header {
   display: flex;
   gap: 1.2rem;
@@ -150,33 +195,66 @@ body {
   margin-bottom: 1rem;
 }
 
+.badge-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.badge-dark {
+  background: #111;
+  color: #fff;
+}
+
+.badge-light {
+  background: #e5e7eb;
+  color: #111;
+}
+
+.badge-green {
+  background: #166534;
+  color: #fff;
+}
+
+.badge-gray {
+  background: #6b7280;
+  color: #fff;
+}
+
 .spaced-list {
   padding-left: 1.2rem;
 }
 
-.spaced-list li {
-  margin-bottom: 0.7rem;
+.line-item {
+  margin-bottom: 0.8rem;
 }
 
-.link-title,
-.inline-link {
-  border: none;
-  background: none;
-  color: #000;
-  text-decoration: underline;
+.link-btn {
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
   cursor: pointer;
-  font: inherit;
-  padding: 0;
+  font-weight: 600;
+  margin-right: 0.5rem;
 }
 
-.link-title {
-  font-weight: 700;
+.link-btn:hover {
+  background: #2b2b2b;
 }
 
-.inline-link:disabled {
-  color: #6b7280;
+.link-btn:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
   cursor: not-allowed;
-  text-decoration: none;
 }
 
 .small-btn,
@@ -232,5 +310,17 @@ body {
 
   .restaurant-layout {
     grid-template-columns: 1fr;
+  }
+
+  .map-sticky-wrap {
+    position: static;
+  }
+
+  .map-box,
+  .detail-map-wrap .map-box,
+  .restaurant-list-scroll {
+    height: 60vh;
+    min-height: 380px;
+    max-height: 60vh;
   }
 }
