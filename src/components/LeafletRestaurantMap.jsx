@@ -48,9 +48,9 @@ export default function LeafletRestaurantMap({ restaurants, forceCenter = false 
       });
 
       if (points.length === 1 || forceCenter) {
-        map.setView([points[0].lat, points[0].lng], 14);
+        map.setView([points[0].lat, points[0].lng], 16);
       } else {
-        map.fitBounds(bounds, { padding: [30, 30] });
+        map.fitBounds(bounds, { padding: [10, 10], maxZoom: 15 });
       }
       requestAnimationFrame(() => map.invalidateSize());
     }

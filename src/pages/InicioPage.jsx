@@ -3,6 +3,7 @@ import React from "react";
 export default function InicioPage() {
   return (
     <section className="panel">
+      <div className="inicio-logo">JOVIAT</div>
       <h2>Inicio</h2>
       <p className="state-text">Usa el menú para navegar entre alumnos, restaurantes y autenticación.</p>
     </section>

@@ -102,6 +102,7 @@ function App() {
             onSearch={setSearchRestaurants}
             restaurants={filteredRestaurants}
             associatesByRestaurantId={vm.restaurantAssociatesById}
+            isMobile={isMobile}
             onOpenRestaurant={setSelectedRestaurantId}
           />
         )}

@@ -3,6 +3,7 @@ import React from "react";
 export default function ProfilePage({ profile }) {
   return (
     <section className="panel">
+      <div className="profile-logo">JOVIAT</div>
       <h2>Perfil</h2>
       <div className="profile-card">
         <img src={profile.photo} alt={profile.name} />

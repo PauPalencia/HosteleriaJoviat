@@ -8,13 +8,20 @@ export default function RestaurantesPage({
   onSearch,
   restaurants,
   onOpenRestaurant,
-  associatesByRestaurantId
+  associatesByRestaurantId,
+  isMobile
 }) {
   return (
     <section className="panel">
       <h2>Restaurantes</h2>
       <SearchInput value={search} onChange={onSearch} placeholder="Buscar restaurante por nombre" />
       <div className="restaurant-layout">
+        {isMobile && (
+          <div className="map-sticky-wrap">
+            <LeafletRestaurantMap restaurants={restaurants} />
+          </div>
+        )}
+
         <div className="restaurant-list-scroll">
           <ul className="restaurant-list">
             {restaurants.map((restaurant) => {
@@ -42,9 +49,12 @@ export default function RestaurantesPage({
             })}
           </ul>
         </div>
-        <div className="map-sticky-wrap">
-          <LeafletRestaurantMap restaurants={restaurants} />
-        </div>
+
+        {!isMobile && (
+          <div className="map-sticky-wrap">
+            <LeafletRestaurantMap restaurants={restaurants} />
+          </div>
+        )}
       </div>
     </section>
   );

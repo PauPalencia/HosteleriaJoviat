@@ -60,7 +60,7 @@ export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaur
 }
 
 function buildEmbedMapUrl(lat, lng) {
-  const delta = 0.01;
+  const delta = 0.0025;
   const bbox = `${lng - delta}%2C${lat - delta}%2C${lng + delta}%2C${lat + delta}`;
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
 }
