@@ -9,7 +9,14 @@ export default function AuthPage({ authMode, setAuthMode }) {
         <button className={authMode === "register" ? "active" : ""} onClick={() => setAuthMode("register")}>Registro</button>
       </div>
       <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
-        {authMode === "register" && <input placeholder="Nombre completo" />}
+        {authMode === "register" && (
+          <>
+            <input placeholder="Nombre completo" />
+            <input placeholder="Teléfono" />
+            <input type="number" placeholder="Edad" />
+            <input placeholder="Curso (string básico)" />
+          </>
+        )}
         <input type="email" placeholder="Correo" />
         <input type="password" placeholder="Contraseña" />
         <button type="submit" className="primary-btn">{authMode === "login" ? "Entrar" : "Crear cuenta"}</button>
