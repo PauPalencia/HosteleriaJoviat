@@ -124,3 +124,38 @@ body {
   .restaurant-thumb { width: 72px; height: 72px; }
   .profile-card { flex-direction: column; align-items: flex-start; }
 }
+
+
+.square-map {
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
+.work-preview-info-column {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.work-preview-info-column p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.student-info-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.student-info-card img {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.student-info-card p {
+  margin: 0.15rem 0;
+  font-size: 0.92rem;
+}

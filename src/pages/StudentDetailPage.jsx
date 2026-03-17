@@ -10,6 +10,10 @@ export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaur
         <div>
           <h2>{student.Name}</h2>
           <p>ID: {student.id}</p>
+          <p><strong>Status:</strong> {student.Status || student.status || "Sin status"}</p>
+          <p><strong>Email:</strong> {student.Email || "-"}</p>
+          <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
+          <p><strong>LinkedIn:</strong> {student.LinkedIn || "-"}</p>
         </div>
       </div>
 
@@ -26,7 +30,7 @@ export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaur
               <strong>{job.restaurant?.Name || "Restaurante no encontrado"}</strong>
               <span>ID: {job.restaurant?.id || "-"}</span>
             </div>
-            <div className="work-preview-map readonly-map">
+            <div className="work-preview-map readonly-map square-map">
               {job.restaurant?.Location ? (
                 <iframe
                   title={`Mapa de ${job.restaurant?.Name || "restaurante"}`}
@@ -37,11 +41,16 @@ export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaur
                 <div className="map-fallback">Sin coordenadas</div>
               )}
             </div>
-            <div className="work-preview-info">
-              <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
-              <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
-                {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
-              </span>
+            <div className="work-preview-info work-preview-info-column">
+              <p><strong>Dirección:</strong> {job.restaurant?.Address || "-"}</p>
+              <p><strong>Email:</strong> {job.restaurant?.Email || "-"}</p>
+              <p><strong>Teléfono:</strong> {job.restaurant?.Phone || "-"}</p>
+              <div className="badge-row">
+                <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
+                <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
+                  {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                </span>
+              </div>
             </div>
           </button>
         ))}
