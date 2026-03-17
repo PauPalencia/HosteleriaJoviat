@@ -7,17 +7,15 @@ import RestaurantesPage from "./pages/RestaurantesPage";
 import AuthPage from "./pages/AuthPage";
 import StudentDetailPage from "./pages/StudentDetailPage";
 import RestaurantDetailPage from "./pages/RestaurantDetailPage";
+import ProfilePage from "./pages/ProfilePage";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { loadFirestoreData } from "./utils/firestore";
 import { buildViewModel } from "./utils/models";
+import { getStudentPhoto } from "./utils/ui";
 
-// ============================================================================
-// App principal: orquesta navegación, carga de datos y render de páginas.
-// ============================================================================
 function App() {
   const isMobile = useIsMobile(900);
 
-  // Estado de navegación y UI
   const [section, setSection] = useState("inicio");
   const [searchStudents, setSearchStudents] = useState("");
   const [searchRestaurants, setSearchRestaurants] = useState("");
@@ -25,12 +23,10 @@ function App() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
 
-  // Estado de datos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dataState, setDataState] = useState({ students: [], restaurants: [], relations: [] });
 
-  // Carga inicial
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -49,7 +45,6 @@ function App() {
     };
   }, []);
 
-  // ViewModel derivado para no recalcular en cada render
   const vm = useMemo(() => buildViewModel(dataState), [dataState]);
 
   const filteredStudents = dataState.students.filter((student) =>
@@ -62,9 +57,16 @@ function App() {
   const selectedStudent = selectedStudentId ? vm.studentById[selectedStudentId] : null;
   const selectedRestaurant = selectedRestaurantId ? vm.restaurantById[selectedRestaurantId] : null;
 
+  const mainProfile = buildProfile(dataState.students[0]);
+
   return (
     <div className={`layout ${isMobile ? "layout-mobile" : ""}`}>
-      <LayoutNav isMobile={isMobile} section={section} onNavigate={handleSectionChange} />
+      <LayoutNav
+        isMobile={isMobile}
+        section={section}
+        onNavigate={handleSectionChange}
+        onProfile={() => handleSectionChange("perfil")}
+      />
 
       <main className="content">
         {loading && <p className="state-text">Cargando datos desde Firestore…</p>}
@@ -99,6 +101,7 @@ function App() {
             search={searchRestaurants}
             onSearch={setSearchRestaurants}
             restaurants={filteredRestaurants}
+            associatesByRestaurantId={vm.restaurantAssociatesById}
             onOpenRestaurant={setSelectedRestaurantId}
           />
         )}
@@ -117,18 +120,38 @@ function App() {
         )}
 
         {!loading && !error && section === "auth" && <AuthPage authMode={authMode} setAuthMode={setAuthMode} />}
+        {!loading && !error && section === "perfil" && <ProfilePage profile={mainProfile} />}
       </main>
     </div>
   );
 
-  // --------------------------------------------------------------------------
-  // Funciones locales de navegación (al final para lectura más clara).
-  // --------------------------------------------------------------------------
   function handleSectionChange(nextSection) {
     setSection(nextSection);
     setSelectedStudentId(null);
     setSelectedRestaurantId(null);
   }
+}
+
+function buildProfile(student) {
+  if (!student) {
+    return {
+      name: "Usuario JOVIAT",
+      email: "usuario@joviat.cat",
+      role: "Administrador",
+      curso: "-",
+      phone: "-",
+      photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=60"
+    };
+  }
+
+  return {
+    name: student.Name || "Usuario",
+    email: student.Email || "sin-email@joviat.cat",
+    role: student.Status || student.status || "Alumno",
+    curso: student.Curso || "No definido",
+    phone: student.Phone || "No definido",
+    photo: getStudentPhoto(student)
+  };
 }
 
 export default App;

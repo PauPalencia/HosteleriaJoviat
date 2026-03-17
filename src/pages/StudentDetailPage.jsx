@@ -1,11 +1,12 @@
 import React from "react";
+import { getStudentPhoto } from "../utils/ui";
 
 export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaurant }) {
   return (
     <section className="panel">
       <button className="small-btn" onClick={onBack}>← Volver a alumnos</button>
       <div className="detail-header">
-        <img src={student.PhotoURL || "/logo192.png"} alt={student.Name} />
+        <img src={getStudentPhoto(student)} alt={student.Name} />
         <div>
           <h2>{student.Name}</h2>
           <p>ID: {student.id}</p>

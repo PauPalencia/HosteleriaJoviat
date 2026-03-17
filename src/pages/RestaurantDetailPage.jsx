@@ -1,12 +1,19 @@
 import React from "react";
 import LeafletRestaurantMap from "../components/LeafletRestaurantMap";
+import { getRestaurantPhoto } from "../utils/ui";
 
 export default function RestaurantDetailPage({ restaurant, jobs, studentSummaryById, onBack, onOpenStudent }) {
   return (
     <section className="panel">
       <button className="small-btn" onClick={onBack}>← Volver a restaurantes</button>
-      <h2>{restaurant.Name}</h2>
-      <p>ID: {restaurant.id}</p>
+      <div className="restaurant-detail-head">
+        <img className="restaurant-cover" src={getRestaurantPhoto(restaurant)} alt={restaurant.Name} />
+        <div>
+          <h2>{restaurant.Name}</h2>
+          <p>ID: {restaurant.id}</p>
+        </div>
+      </div>
+
       <div className="detail-map-wrap">
         <LeafletRestaurantMap restaurants={[restaurant]} forceCenter />
       </div>

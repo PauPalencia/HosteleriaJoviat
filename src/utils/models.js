@@ -1,11 +1,9 @@
-// Normaliza arrays/referencias para no depender del formato exacto de Firestore.
 export function ensureArray(value) {
   if (Array.isArray(value)) return value;
   if (value === undefined || value === null) return [];
   return [value];
 }
 
-// Usa campo Status/status de Alumnos.
 export function normalizeStatus(statusValue) {
   const raw = String(statusValue || "").trim();
   if (!raw) return "Sin status";
@@ -21,7 +19,6 @@ export function getCurrentJobFlag(relation) {
   return Boolean(relation.current_job ?? relation.currentjob);
 }
 
-// Deriva índices y relaciones para consulta rápida por vista.
 export function buildViewModel({ students, restaurants, relations }) {
   const studentById = Object.fromEntries(students.map((s) => [s.id, s]));
   const restaurantById = Object.fromEntries(restaurants.map((r) => [r.id, r]));
@@ -65,11 +62,25 @@ export function buildViewModel({ students, restaurants, relations }) {
     };
   });
 
+  const restaurantAssociatesById = {};
+  Object.entries(jobsByRestaurantId).forEach(([restaurantId, jobs]) => {
+    const uniq = [];
+    const seen = new Set();
+    jobs.forEach((job) => {
+      if (job.student?.id && !seen.has(job.student.id)) {
+        seen.add(job.student.id);
+        uniq.push(job.student);
+      }
+    });
+    restaurantAssociatesById[restaurantId] = uniq;
+  });
+
   return {
     studentById,
     restaurantById,
     jobsByStudentId,
     jobsByRestaurantId,
-    studentSummaryById
+    studentSummaryById,
+    restaurantAssociatesById
   };
 }
