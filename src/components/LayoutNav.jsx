@@ -1,29 +1,14 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 
-export default function LayoutNav({
-  isMobile,
-  section,
-  onNavigate,
-  onProfile,
-  isAuthenticated,
-  isAdmin,
-  onLogout
-}) {
+export default function LayoutNav({ isMobile, section, onNavigate, onProfile }) {
   const [open, setOpen] = useState(false);
 
-  const items = useMemo(() => {
-    const baseItems = [
-      { key: "inicio", label: "Inicio" },
-      { key: "alumnos", label: "Alumnos" },
-      { key: "restaurantes", label: "Restaurantes" }
-    ];
-
-    if (isAdmin) baseItems.push({ key: "crear", label: "Crear registros" });
-    if (isAdmin) baseItems.push({ key: "admin", label: "Administración" });
-    if (!isAuthenticated) baseItems.push({ key: "auth", label: "Login / Registro" });
-
-    return baseItems;
-  }, [isAuthenticated, isAdmin]);
+  const items = [
+    { key: "inicio", label: "Inicio" },
+    { key: "alumnos", label: "Alumnos" },
+    { key: "restaurantes", label: "Restaurantes" },
+    { key: "auth", label: "Login / Registro" }
+  ];
 
   if (isMobile) {
     return (
@@ -31,8 +16,17 @@ export default function LayoutNav({
         <div className="mobile-topbar-head">
           <strong>JOVIAT</strong>
           <div className="mobile-actions">
-            <button className="icon-btn" onClick={onProfile} aria-label="Perfil">👤</button>
-            <button className="icon-btn" onClick={() => setOpen((value) => !value)} aria-label="Abrir menú">☰</button>
+            <button
+              className="icon-btn"
+              onClick={() => {
+                onProfile();
+                setOpen(false);
+              }}
+              aria-label="Perfil"
+            >
+              👤
+            </button>
+            <button className="icon-btn" onClick={() => setOpen((v) => !v)} aria-label="Abrir menú">☰</button>
           </div>
         </div>
 
@@ -50,14 +44,6 @@ export default function LayoutNav({
                 {item.label}
               </button>
             ))}
-            {isAuthenticated && (
-              <button className="danger-btn" onClick={() => {
-                onLogout();
-                setOpen(false);
-              }}>
-                LogOut
-              </button>
-            )}
           </div>
         )}
       </header>
@@ -66,25 +52,17 @@ export default function LayoutNav({
 
   return (
     <aside className="sidebar">
-      <div>
-        <div className="sidebar-head">
-          <h1>JOVIAT</h1>
-          <button className="icon-btn" onClick={onProfile} aria-label="Perfil">👤</button>
-        </div>
-        <nav>
-          {items.map((item) => (
-            <button key={item.key} onClick={() => onNavigate(item.key)} className={section === item.key ? "active" : ""}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
+      <div className="sidebar-head">
+        <h1>JOVIAT</h1>
+        <button className="icon-btn" onClick={onProfile} aria-label="Perfil">👤</button>
       </div>
-
-      {isAuthenticated && (
-        <button className="danger-btn sidebar-logout" onClick={onLogout}>
-          LogOut
-        </button>
-      )}
+      <nav>
+        {items.map((item) => (
+          <button key={item.key} onClick={() => onNavigate(item.key)} className={section === item.key ? "active" : ""}>
+            {item.label}
+          </button>
+        ))}
+      </nav>
     </aside>
   );
 }

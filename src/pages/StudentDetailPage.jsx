@@ -1,17 +1,17 @@
 import React from "react";
 import { getRestaurantPhoto, getStudentPhoto } from "../utils/ui";
+import { getRoleLabel, normalizeRole, ROLE_KEYS } from "../utils/models";
 
 export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaurant }) {
   return (
     <section className="panel">
       <button className="small-btn" onClick={onBack}>← Volver a alumnos</button>
-
-      <div className="detail-header student-detail-header">
+      <div className="detail-header">
         <img src={getStudentPhoto(student)} alt={student.Name} />
-        <div className="detail-info-stack">
+        <div>
           <h2>{student.Name}</h2>
-          <p><strong>ID:</strong> {student.id}</p>
-          <p><strong>Status:</strong> {student.Status || student.status || "Sin status"}</p>
+          <p>ID: {student.id}</p>
+          <p><strong>Status:</strong> {getRoleLabel(normalizeRole(student.Status || student.status, ROLE_KEYS.STUDENT))}</p>
           <p><strong>Email:</strong> {student.Email || "-"}</p>
           <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
           <p><strong>LinkedIn:</strong> {student.LinkedIn || "-"}</p>
@@ -23,33 +23,54 @@ export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaur
         {jobs.map((job, index) => (
           <button
             key={`${student.id}-${index}`}
-            className="ref-card restaurant-relation-card"
+            className="work-preview ref-card work-preview-card"
             onClick={() => onOpenRestaurant(job.restaurant?.id || null)}
             disabled={!job.restaurant?.id}
           >
-            <img
-              className="restaurant-relation-photo"
-              src={getRestaurantPhoto(job.restaurant)}
-              alt={job.restaurant?.Name || "Restaurante"}
-            />
-            <div className="restaurant-relation-body">
-              <div className="restaurant-relation-title">
-                <strong>{job.restaurant?.Name || "Restaurante no encontrado"}</strong>
-                <span>ID: {job.restaurant?.id || "-"}</span>
+            <div className="work-preview-card-head">
+              <img
+                className="work-preview-thumb"
+                src={getRestaurantPhoto(job.restaurant)}
+                alt={job.restaurant?.Name || "Restaurante"}
+              />
+              <div className="work-preview-heading">
+                <div className="work-header-inline">
+                  <strong>{job.restaurant?.Name || "Restaurante no encontrado"}</strong>
+                  <span>ID: {job.restaurant?.id || "-"}</span>
+                </div>
+                <div className="work-preview-info work-preview-info-column">
+                  <p><strong>Dirección:</strong> {job.restaurant?.Address || "-"}</p>
+                  <p><strong>Email:</strong> {job.restaurant?.Email || "-"}</p>
+                  <p><strong>Teléfono:</strong> {job.restaurant?.Phone || "-"}</p>
+                  <div className="badge-row">
+                    <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
+                    <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
+                      {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <p><strong>Dirección:</strong> {job.restaurant?.Address || "-"}</p>
-              <p><strong>Email:</strong> {job.restaurant?.Email || "-"}</p>
-              <p><strong>Teléfono:</strong> {job.restaurant?.Phone || "-"}</p>
-              <div className="badge-row">
-                <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
-                <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
-                  {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
-                </span>
-              </div>
+            </div>
+            <div className="work-preview-map readonly-map square-map">
+              {job.restaurant?.Location ? (
+                <iframe
+                  title={`Mapa de ${job.restaurant?.Name || "restaurante"}`}
+                  loading="lazy"
+                  src={buildEmbedMapUrl(job.restaurant.Location.lat, job.restaurant.Location.lng)}
+                />
+              ) : (
+                <div className="map-fallback">Sin coordenadas</div>
+              )}
             </div>
           </button>
         ))}
       </div>
     </section>
   );
+}
+
+function buildEmbedMapUrl(lat, lng) {
+  const delta = 0.0025;
+  const bbox = `${lng - delta}%2C${lat - delta}%2C${lng + delta}%2C${lat + delta}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
 }
