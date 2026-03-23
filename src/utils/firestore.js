@@ -2,15 +2,16 @@ const FIRESTORE_PROJECT_ID = process.env.REACT_APP_FIREBASE_PROJECT_ID;
 const FIRESTORE_DATABASE_ID = process.env.REACT_APP_FIREBASE_DATABASE_ID || "(default)";
 const FIRESTORE_API_KEY = process.env.REACT_APP_FIREBASE_API_KEY;
 
-// Carga de colecciones base de Firestore.
+// Carga de colecciones base de Firestore. Los administradores viven en su propia colección.
 export async function loadFirestoreData() {
-  const [students, restaurants, relations] = await Promise.all([
+  const [students, restaurants, relations, administrators] = await Promise.all([
     fetchCollection("Alumnos"),
     fetchCollection("Restaurante"),
-    fetchCollection("Res-Alum")
+    fetchCollection("Res-Alum"),
+    fetchCollection("Administrator")
   ]);
 
-  return { students, restaurants, relations };
+  return { students, restaurants, relations, administrators };
 }
 
 async function fetchCollection(collectionName) {
