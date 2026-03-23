@@ -36,6 +36,10 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .sidebar-head {
@@ -136,6 +140,14 @@ body {
   background: #fee2e2;
   border: 1px solid #fca5a5;
   color: #991b1b;
+  border-radius: 10px;
+  padding: 0.9rem;
+}
+
+.success-box {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
   border-radius: 10px;
   padding: 0.9rem;
 }
@@ -332,8 +344,8 @@ body {
 
 .student-work-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
-  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.95rem;
   align-items: start;
 }
 
@@ -488,6 +500,65 @@ body {
   max-width: 520px;
 }
 
+.create-tabs {
+  max-width: 520px;
+}
+
+.create-form {
+  max-width: 680px;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-card,
+.empty-card {
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+.admin-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.admin-card p,
+.empty-card {
+  margin: 0.3rem 0;
+}
+
+.admin-card-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+
+.danger-btn {
+  border: 1px solid #b91c1c;
+  background: #b91c1c;
+  color: #fff;
+}
+
+.sidebar-logout {
+  width: 100%;
+}
+
+.profile-detail-card {
+  margin-top: 0.75rem;
+}
+
 .inicio-logo {
   font-size: clamp(2.6rem, 7vw, 4.8rem);
   font-weight: 900;
@@ -500,6 +571,12 @@ body {
   font-weight: 900;
   letter-spacing: 0.08em;
   margin-bottom: 0.4rem;
+}
+
+@media (max-width: 1200px) {
+  .student-work-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -585,7 +662,19 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .auth-form {
+  .auth-form,
+  .create-tabs,
+  .create-form {
     max-width: none;
   }
+
+  .inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-logout,
+  .mobile-menu-dropdown .danger-btn {
+    width: 100%;
+  }
 }
+
