@@ -6,6 +6,7 @@ const INITIAL_STUDENT = {
   Phone: "",
   Curso: "",
   Status: "Alumno",
+  Password: "",
   PhotoURL: ""
 };
 
@@ -32,6 +33,7 @@ export default function CreateRecordsPage({ onCreateStudent, onCreateRestaurant,
       Email: studentForm.Email.trim(),
       Name: studentForm.Name.trim(),
       Curso: studentForm.Curso.trim(),
+      Password: studentForm.Password,
       PhotoURL: studentForm.PhotoURL.trim()
     });
     setStudentForm(INITIAL_STUDENT);
@@ -72,6 +74,7 @@ export default function CreateRecordsPage({ onCreateStudent, onCreateRestaurant,
           <input value={studentForm.Phone} onChange={(e) => setStudentForm((p) => ({ ...p, Phone: e.target.value }))} placeholder="Teléfono" required />
           <input value={studentForm.Curso} onChange={(e) => setStudentForm((p) => ({ ...p, Curso: e.target.value }))} placeholder="Curso" required />
           <input value={studentForm.Status} onChange={(e) => setStudentForm((p) => ({ ...p, Status: e.target.value }))} placeholder="Status" required />
+          <input type="password" value={studentForm.Password} onChange={(e) => setStudentForm((p) => ({ ...p, Password: e.target.value }))} placeholder="Contraseña de acceso" required />
           <input value={studentForm.PhotoURL} onChange={(e) => setStudentForm((p) => ({ ...p, PhotoURL: e.target.value }))} placeholder="URL de foto (opcional)" />
           <button type="submit" className="primary-btn">Guardar alumno</button>
         </form>
