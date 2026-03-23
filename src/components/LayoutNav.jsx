@@ -18,7 +18,7 @@ export default function LayoutNav({
       { key: "restaurantes", label: "Restaurantes" }
     ];
 
-    if (isAuthenticated) baseItems.push({ key: "crear", label: "Crear registros" });
+    if (isAdmin) baseItems.push({ key: "crear", label: "Crear registros" });
     if (isAdmin) baseItems.push({ key: "admin", label: "Administración" });
     if (!isAuthenticated) baseItems.push({ key: "auth", label: "Login / Registro" });
 

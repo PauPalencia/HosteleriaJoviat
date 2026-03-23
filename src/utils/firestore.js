@@ -3,15 +3,15 @@ const FIRESTORE_DATABASE_ID = process.env.REACT_APP_FIREBASE_DATABASE_ID || "(de
 const FIRESTORE_API_KEY = process.env.REACT_APP_FIREBASE_API_KEY;
 
 export async function loadFirestoreData() {
-  const [students, restaurants, relations, users, pendingUsers] = await Promise.all([
+  const [students, restaurants, relations, administrators, pendingStudents] = await Promise.all([
     fetchCollection("Alumnos"),
     fetchCollection("Restaurante"),
     fetchCollection("Res-Alum"),
-    fetchCollection("Usuarios", { optional: true }),
-    fetchCollection("PendingUsers", { optional: true })
+    fetchCollection("Administrator", { optional: true }),
+    fetchCollection("AlumnosPendientes", { optional: true })
   ]);
 
-  return { students, restaurants, relations, users, pendingUsers };
+  return { students, restaurants, relations, administrators, pendingStudents };
 }
 
 export async function createDocument(collectionName, fields, documentId) {

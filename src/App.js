@@ -15,7 +15,7 @@ import { createDocument, deleteDocument, loadFirestoreData } from "./utils/fires
 import { buildViewModel } from "./utils/models";
 import { getStudentPhoto } from "./utils/ui";
 
-const SESSION_STORAGE_KEY = "joviat-session-user-id";
+const SESSION_STORAGE_KEY = "joviat-session";
 
 function App() {
   const isMobile = useIsMobile(900);
@@ -26,7 +26,7 @@ function App() {
   const [authMode, setAuthMode] = useState("login");
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(() => loadStoredSession());
+  const [session, setSession] = useState(() => loadStoredSession());
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,8 +37,8 @@ function App() {
     students: [],
     restaurants: [],
     relations: [],
-    users: [],
-    pendingUsers: []
+    administrators: [],
+    pendingStudents: []
   });
 
   useEffect(() => {
@@ -62,18 +62,20 @@ function App() {
   const vm = useMemo(() => buildViewModel(dataState), [dataState]);
 
   const currentUser = useMemo(() => {
-    const rawUser = dataState.users.find((user) => user.id === currentUserId);
-    return rawUser ? normalizeUserRecord(rawUser) : null;
-  }, [dataState.users, currentUserId]);
+    if (!session?.id || !session?.type) return null;
+    const source = session.type === "admin" ? dataState.administrators : dataState.students;
+    const raw = source.find((record) => record.id === session.id);
+    return raw ? normalizeAccount(raw, session.type) : null;
+  }, [dataState.administrators, dataState.students, session]);
 
-  const isAdmin = currentUser?.roleKey === "admin";
+  const isAdmin = currentUser?.type === "admin";
 
   useEffect(() => {
-    if (currentUserId && !currentUser) {
+    if (session && !currentUser) {
       clearStoredSession();
-      setCurrentUserId(null);
+      setSession(null);
     }
-  }, [currentUser, currentUserId]);
+  }, [currentUser, session]);
 
   const filteredStudents = dataState.students.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
@@ -84,7 +86,7 @@ function App() {
 
   const selectedStudent = selectedStudentId ? vm.studentById[selectedStudentId] : null;
   const selectedRestaurant = selectedRestaurantId ? vm.restaurantById[selectedRestaurantId] : null;
-  const mainProfile = currentUser ? buildProfileFromUser(currentUser) : buildFallbackProfile(dataState.students[0]);
+  const mainProfile = currentUser ? buildProfileFromAccount(currentUser) : buildFallbackProfile(dataState.students[0]);
 
   return (
     <div className={`layout ${isMobile ? "layout-mobile" : ""}`}>
@@ -150,7 +152,7 @@ function App() {
           />
         )}
 
-        {!loading && !error && section === "crear" && currentUser && (
+        {!loading && !error && section === "crear" && isAdmin && (
           <CreateRecordsPage
             feedback={createFeedback}
             onCreateStudent={handleCreateStudent}
@@ -160,9 +162,9 @@ function App() {
 
         {!loading && !error && section === "admin" && isAdmin && (
           <AdminPage
-            pendingUsers={dataState.pendingUsers.map(normalizeUserRecord)}
-            onApproveUser={handleApproveUser}
-            onRejectUser={handleRejectUser}
+            pendingUsers={dataState.pendingStudents.map((student) => normalizeAccount(student, "pending"))}
+            onApproveUser={handleApproveStudent}
+            onRejectUser={handleRejectStudent}
           />
         )}
 
@@ -187,12 +189,12 @@ function App() {
   );
 
   function handleSectionChange(nextSection) {
-    if (["crear", "perfil"].includes(nextSection) && !currentUser) {
+    if (["perfil"].includes(nextSection) && !currentUser) {
       setSection("auth");
       return;
     }
 
-    if (nextSection === "admin" && !isAdmin) {
+    if (["crear", "admin"].includes(nextSection) && !isAdmin) {
       setSection(currentUser ? "inicio" : "auth");
       return;
     }
@@ -209,19 +211,34 @@ function App() {
     setAuthError("");
     setAuthSuccess("");
 
-    const user = dataState.users.find(
+    const admin = dataState.administrators.find(
       (candidate) =>
         normalizeText(candidate.email || candidate.Email) === normalizeText(email) &&
         String(candidate.password || candidate.Password || "") === password
     );
 
-    if (!user) {
-      setAuthError("No existe un usuario aprobado con ese correo o contraseña.");
+    if (admin) {
+      const nextSession = { id: admin.id, type: "admin" };
+      persistSession(nextSession);
+      setSession(nextSession);
+      setSection("inicio");
       return;
     }
 
-    persistSession(user.id);
-    setCurrentUserId(user.id);
+    const student = dataState.students.find(
+      (candidate) =>
+        normalizeText(candidate.Email) === normalizeText(email) &&
+        String(candidate.password || candidate.Password || "") === password
+    );
+
+    if (!student) {
+      setAuthError("No existe un administrador o alumno aprobado con ese correo o contraseña.");
+      return;
+    }
+
+    const nextSession = { id: student.id, type: "student" };
+    persistSession(nextSession);
+    setSession(nextSession);
     setSection("inicio");
   }
 
@@ -229,37 +246,36 @@ function App() {
     setAuthError("");
     setAuthSuccess("");
 
-    const repeatedEmail = [...dataState.users, ...dataState.pendingUsers].some(
+    const repeatedEmail = [...dataState.administrators, ...dataState.students, ...dataState.pendingStudents].some(
       (candidate) => normalizeText(candidate.email || candidate.Email) === normalizeText(form.email)
     );
 
     if (repeatedEmail) {
-      setAuthError("Ya existe un usuario o solicitud con ese correo.");
+      setAuthError("Ya existe un administrador, alumno o alumno pendiente con ese correo.");
       return;
     }
 
-    const created = await createDocument("PendingUsers", {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      curso: form.curso,
-      password: form.password,
-      role: "user",
-      approved: false,
-      createdAt: new Date().toISOString()
+    const created = await createDocument("AlumnosPendientes", {
+      Name: form.name,
+      Email: form.email,
+      Phone: form.phone,
+      Curso: form.curso,
+      Password: form.password,
+      Status: "Pendiente",
+      requestedAt: new Date().toISOString()
     });
 
     setDataState((current) => ({
       ...current,
-      pendingUsers: [...current.pendingUsers, created]
+      pendingStudents: [...current.pendingStudents, created]
     }));
-    setAuthSuccess("Registro enviado. Un administrador debe aceptarlo antes de que puedas entrar.");
+    setAuthSuccess("Registro enviado. Un administrador debe aceptar al alumno antes de que pueda entrar.");
     setAuthMode("login");
   }
 
   async function handleCreateStudent(studentInput) {
     setCreateFeedback("");
-    const createdStudent = await createDocument("Alumnos", studentInput);
+    const createdStudent = await createDocument("Alumnos", { ...studentInput, Password: studentInput.Password || "" });
     setDataState((current) => ({
       ...current,
       students: [...current.students, createdStudent]
@@ -277,59 +293,58 @@ function App() {
     setCreateFeedback(`Restaurante ${createdRestaurant.Name || createdRestaurant.name} creado correctamente.`);
   }
 
-  async function handleApproveUser(userId) {
-    const pendingUser = dataState.pendingUsers.find((user) => user.id === userId);
-    if (!pendingUser) return;
+  async function handleApproveStudent(studentId) {
+    const pendingStudent = dataState.pendingStudents.find((student) => student.id === studentId);
+    if (!pendingStudent) return;
 
-    const approvedUser = await createDocument(
-      "Usuarios",
+    const approvedStudent = await createDocument(
+      "Alumnos",
       {
-        name: pendingUser.name || pendingUser.Name,
-        email: pendingUser.email || pendingUser.Email,
-        phone: pendingUser.phone || pendingUser.Phone,
-        curso: pendingUser.curso || pendingUser.Curso,
-        password: pendingUser.password || pendingUser.Password,
-        role: pendingUser.role || "user",
-        approved: true,
-        photo: pendingUser.photo || pendingUser.PhotoURL || ""
+        Name: pendingStudent.Name || pendingStudent.name,
+        Email: pendingStudent.Email || pendingStudent.email,
+        Phone: pendingStudent.Phone || pendingStudent.phone,
+        Curso: pendingStudent.Curso || pendingStudent.curso,
+        Password: pendingStudent.Password || pendingStudent.password,
+        Status: "Alumno",
+        PhotoURL: pendingStudent.PhotoURL || pendingStudent.photo || ""
       },
-      userId
+      studentId
     );
 
-    await deleteDocument("PendingUsers", userId);
+    await deleteDocument("AlumnosPendientes", studentId);
 
     setDataState((current) => ({
       ...current,
-      users: [...current.users, approvedUser],
-      pendingUsers: current.pendingUsers.filter((user) => user.id !== userId)
+      students: [...current.students, approvedStudent],
+      pendingStudents: current.pendingStudents.filter((student) => student.id !== studentId)
     }));
   }
 
-  async function handleRejectUser(userId) {
-    await deleteDocument("PendingUsers", userId);
+  async function handleRejectStudent(studentId) {
+    await deleteDocument("AlumnosPendientes", studentId);
     setDataState((current) => ({
       ...current,
-      pendingUsers: current.pendingUsers.filter((user) => user.id !== userId)
+      pendingStudents: current.pendingStudents.filter((student) => student.id !== studentId)
     }));
   }
 
   function handleLogout() {
     clearStoredSession();
-    setCurrentUserId(null);
+    setSession(null);
     setSection("inicio");
     setSelectedStudentId(null);
     setSelectedRestaurantId(null);
   }
 }
 
-function buildProfileFromUser(user) {
+function buildProfileFromAccount(account) {
   return {
-    name: user.name,
-    email: user.email,
-    role: user.roleLabel,
-    curso: user.curso || "No definido",
-    phone: user.phone || "No definido",
-    photo: user.photo || getStudentPhoto(null)
+    name: account.name,
+    email: account.email,
+    role: account.roleLabel,
+    curso: account.curso || "No definido",
+    phone: account.phone || "No definido",
+    photo: account.photo || getStudentPhoto(null)
   };
 }
 
@@ -355,18 +370,18 @@ function buildFallbackProfile(student) {
   };
 }
 
-function normalizeUserRecord(user) {
-  const roleKey = String(user.role || user.Role || "user").toLowerCase() === "admin" ? "admin" : "user";
+function normalizeAccount(record, type) {
+  const normalizedType = type === "admin" ? "admin" : type === "pending" ? "pending" : "student";
   return {
-    id: user.id,
-    name: user.name || user.Name || "Usuario JOVIAT",
-    email: user.email || user.Email || "",
-    phone: user.phone || user.Phone || "",
-    curso: user.curso || user.Curso || "",
-    password: user.password || user.Password || "",
-    photo: user.photo || user.PhotoURL || "",
-    roleKey,
-    roleLabel: roleKey === "admin" ? "Administrador" : "Usuario"
+    id: record.id,
+    name: record.name || record.Name || "Usuario JOVIAT",
+    email: record.email || record.Email || "",
+    phone: record.phone || record.Phone || "",
+    curso: record.curso || record.Curso || "",
+    password: record.password || record.Password || "",
+    photo: record.photo || record.PhotoURL || "",
+    type: normalizedType,
+    roleLabel: normalizedType === "admin" ? "Administrador" : normalizedType === "pending" ? "Alumno pendiente" : "Alumno"
   };
 }
 
@@ -376,15 +391,16 @@ function normalizeText(value) {
 
 function loadStoredSession() {
   try {
-    return window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function persistSession(userId) {
+function persistSession(session) {
   try {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, userId);
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
   } catch {}
 }
 
