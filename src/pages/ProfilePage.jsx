@@ -1,10 +1,28 @@
 import React from "react";
 
-export default function ProfilePage({ profile }) {
+export default function ProfilePage({ profile, isAuthenticated, onGoToAuth, onLogout }) {
+  if (!isAuthenticated) {
+    return (
+      <section className="panel">
+        <div className="profile-logo">JOVIAT</div>
+        <h2>Perfil</h2>
+        <p>Necesitas iniciar sesión para ver datos personales.</p>
+        <button type="button" className="primary-btn" onClick={onGoToAuth}>
+          Ir a login / registro
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section className="panel">
       <div className="profile-logo">JOVIAT</div>
       <h2>Perfil</h2>
+      <div className="profile-actions">
+        <button type="button" className="small-btn" onClick={onLogout}>
+          Cerrar sesión
+        </button>
+      </div>
       <div className="profile-card">
         <img src={profile.photo} alt={profile.name} />
         <div>

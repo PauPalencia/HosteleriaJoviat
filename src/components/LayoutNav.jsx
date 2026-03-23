@@ -16,7 +16,16 @@ export default function LayoutNav({ isMobile, section, onNavigate, onProfile }) 
         <div className="mobile-topbar-head">
           <strong>JOVIAT</strong>
           <div className="mobile-actions">
-            <button className="icon-btn" onClick={onProfile} aria-label="Perfil">👤</button>
+            <button
+              className="icon-btn"
+              onClick={() => {
+                onProfile();
+                setOpen(false);
+              }}
+              aria-label="Perfil"
+            >
+              👤
+            </button>
             <button className="icon-btn" onClick={() => setOpen((v) => !v)} aria-label="Abrir menú">☰</button>
           </div>
         </div>

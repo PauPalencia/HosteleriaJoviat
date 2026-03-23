@@ -1,5 +1,6 @@
 import React from "react";
 import { getRestaurantPhoto, getStudentPhoto } from "../utils/ui";
+import { getRoleLabel, normalizeRole, ROLE_KEYS } from "../utils/models";
 
 export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaurant }) {
   return (
@@ -10,7 +11,7 @@ export default function StudentDetailPage({ student, jobs, onBack, onOpenRestaur
         <div>
           <h2>{student.Name}</h2>
           <p>ID: {student.id}</p>
-          <p><strong>Status:</strong> {student.Status || student.status || "Sin status"}</p>
+          <p><strong>Status:</strong> {getRoleLabel(normalizeRole(student.Status || student.status, ROLE_KEYS.STUDENT))}</p>
           <p><strong>Email:</strong> {student.Email || "-"}</p>
           <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
           <p><strong>LinkedIn:</strong> {student.LinkedIn || "-"}</p>
