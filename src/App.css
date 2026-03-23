@@ -247,3 +247,137 @@ body {
 }
 
 .profile-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
+
+
+.sidebar-shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sidebar-footer {
+  padding-top: 1rem;
+  border-top: 1px solid #2f2f2f;
+}
+
+.mobile-menu-shell {
+  background: #000;
+  border-radius: 12px;
+  padding: 0.4rem 0;
+}
+
+.danger-logout-btn {
+  width: 100%;
+  border: 1px solid #7f1d1d;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: #b91c1c;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-header-block {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.clean-auth-form {
+  max-width: 640px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.95rem;
+}
+
+.auth-field span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.compact-grid {
+  gap: 0.8rem;
+}
+
+.auth-submit-btn {
+  width: 100%;
+}
+
+.section-helper-text {
+  margin: 0 0 1rem;
+  color: #4b5563;
+}
+
+.admin-review-card {
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.admin-review-head {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-review-head img {
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.admin-review-head h3,
+.admin-review-head p,
+.compact-admin-card h3,
+.compact-admin-card p,
+.admin-stat-card p {
+  margin: 0.2rem 0;
+}
+
+.admin-review-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.admin-stats-grid {
+  margin-bottom: 1rem;
+}
+
+.admin-stat-card {
+  min-height: 120px;
+}
+
+.compact-admin-card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .sidebar-footer {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-review-head {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-review-head img {
+    width: 72px;
+    height: 72px;
+  }
+
+  .admin-review-actions {
+    flex-direction: column;
+  }
+}

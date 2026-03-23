@@ -8,15 +8,16 @@ import AuthPage from "./pages/AuthPage";
 import StudentDetailPage from "./pages/StudentDetailPage";
 import RestaurantDetailPage from "./pages/RestaurantDetailPage";
 import ProfilePage from "./pages/ProfilePage";
+import AdminPendingPage from "./pages/AdminPendingPage";
+import AdminManagementPage from "./pages/AdminManagementPage";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { loadFirestoreData } from "./utils/firestore";
-import { buildViewModel, getRoleLabel, normalizeRole, ROLE_KEYS } from "./utils/models";
+import { buildViewModel, normalizeRole, ROLE_KEYS } from "./utils/models";
 import { getStudentPhoto } from "./utils/ui";
 
 const EMPTY_AUTH_FORM = {
   name: "",
   phone: "",
-  age: "",
   curso: "",
   email: "",
   password: "",
@@ -25,6 +26,7 @@ const EMPTY_AUTH_FORM = {
 
 const SESSION_STORAGE_KEY = "hosteleria-joviat-session";
 const PENDING_USERS_STORAGE_KEY = "hosteleria-joviat-pending-users";
+const APPROVED_USERS_STORAGE_KEY = "hosteleria-joviat-approved-users";
 
 function App() {
   const isMobile = useIsMobile(900);
@@ -44,12 +46,13 @@ function App() {
   const [error, setError] = useState("");
   const [dataState, setDataState] = useState({ students: [], restaurants: [], relations: [], administrators: [] });
   const [pendingStudents, setPendingStudents] = useState(() => readJsonStorage(PENDING_USERS_STORAGE_KEY, []));
+  const [approvedStudents, setApprovedStudents] = useState(() => readJsonStorage(APPROVED_USERS_STORAGE_KEY, []));
   const [session, setSession] = useState(() => readJsonStorage(SESSION_STORAGE_KEY, null));
 
   useEffect(() => {
     let mounted = true;
 
-    // La precarga sigue existiendo, pero ya no bloquea la pantalla de autenticación.
+    // La precarga pública no puede bloquear el acceso al login.
     (async () => {
       try {
         const data = await loadFirestoreData();
@@ -71,12 +74,21 @@ function App() {
   }, [pendingStudents]);
 
   useEffect(() => {
+    writeJsonStorage(APPROVED_USERS_STORAGE_KEY, approvedStudents);
+  }, [approvedStudents]);
+
+  useEffect(() => {
     writeJsonStorage(SESSION_STORAGE_KEY, session);
   }, [session]);
 
-  const vm = useMemo(() => buildViewModel(dataState), [dataState]);
+  // Mezclamos alumnos remotos con los aprobados localmente para que el admin los vea ya como alumnos activos.
+  const allStudents = useMemo(() => mergeStudents(dataState.students, approvedStudents), [dataState.students, approvedStudents]);
+  const vm = useMemo(
+    () => buildViewModel({ ...dataState, students: allStudents }),
+    [allStudents, dataState]
+  );
 
-  const filteredStudents = dataState.students.filter((student) =>
+  const filteredStudents = allStudents.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
   );
   const filteredRestaurants = dataState.restaurants.filter((restaurant) =>
@@ -85,19 +97,23 @@ function App() {
 
   const selectedStudent = selectedStudentId ? vm.studentById[selectedStudentId] : null;
   const selectedRestaurant = selectedRestaurantId ? vm.restaurantById[selectedRestaurantId] : null;
+  const currentAdministrator = useMemo(
+    () => findSessionUser(session, [], dataState.administrators, []),
+    [session, dataState.administrators]
+  );
 
-  // El perfil solo sale de la sesión actual; así evitamos exponer el primer alumno cargado.
   const mainProfile = useMemo(
-    () => buildProfileFromSession(session, dataState.students, dataState.administrators, pendingStudents),
-    [session, dataState.students, dataState.administrators, pendingStudents]
+    () => buildProfileFromSession(session, allStudents, dataState.administrators, pendingStudents),
+    [session, allStudents, dataState.administrators, pendingStudents]
   );
 
   const authCatalog = useMemo(
-    () => buildAuthCatalog(dataState.students, dataState.administrators, pendingStudents),
-    [dataState.students, dataState.administrators, pendingStudents]
+    () => buildAuthCatalog(allStudents, dataState.administrators, pendingStudents),
+    [allStudents, dataState.administrators, pendingStudents]
   );
 
   const isAuthSection = section === "auth";
+  const isAdmin = session?.roleKey === ROLE_KEYS.ADMINISTRATOR;
   const canRenderDataSection = !loading && !error;
 
   return (
@@ -107,6 +123,9 @@ function App() {
         section={section}
         onNavigate={handleSectionChange}
         onProfile={() => handleSectionChange("perfil")}
+        onLogout={handleLogout}
+        isAuthenticated={Boolean(session)}
+        isAdmin={isAdmin}
       />
 
       <main className="content">
@@ -180,11 +199,39 @@ function App() {
             profile={mainProfile}
             isAuthenticated={Boolean(session)}
             onGoToAuth={() => handleSectionChange("auth")}
-            onLogout={handleLogout}
           />
         )}
 
-        {!isAuthSection && error && section !== "perfil" && (
+        {section === "admin-pendientes" && isAdmin && (
+          <AdminPendingPage
+            pendingStudents={pendingStudents}
+            onApprove={handleApprovePendingStudent}
+            onRemove={handleRemovePendingStudent}
+          />
+        )}
+
+        {section === "admin-herramientas" && isAdmin && (
+          <AdminManagementPage
+            currentAdministrator={currentAdministrator}
+            administrators={dataState.administrators}
+            pendingStudents={pendingStudents}
+            approvedStudents={approvedStudents}
+            totalStudents={allStudents.length}
+            totalRestaurants={dataState.restaurants.length}
+          />
+        )}
+
+        {section.startsWith("admin-") && !isAdmin && (
+          <section className="panel">
+            <h2>Zona de administración</h2>
+            <p>Solo los administradores pueden entrar en esta sección.</p>
+            <button type="button" className="primary-btn" onClick={() => handleSectionChange("auth")}>
+              Ir a login
+            </button>
+          </section>
+        )}
+
+        {!isAuthSection && error && section !== "perfil" && !section.startsWith("admin-") && (
           <section className="panel">
             <h2>Acceso limitado</h2>
             <p>
@@ -208,12 +255,11 @@ function App() {
     setAuthInfo("");
   }
 
-
   function handleLogout() {
     setSession(null);
     setAuthForm(EMPTY_AUTH_FORM);
     setAuthError("");
-    setAuthInfo("Sesión cerrada.");
+    setAuthInfo("Has salido de la sesión.");
     setSection("auth");
   }
 
@@ -239,8 +285,8 @@ function App() {
       if (authMode === "login") {
         const nextSession = authenticateUser(authCatalog, authForm);
         setSession(nextSession);
-        setSection("perfil");
-        setAuthInfo(`Sesión iniciada como ${getRoleLabel(nextSession.roleKey).toLowerCase()}.`);
+        setSection(nextSession.roleKey === ROLE_KEYS.ADMINISTRATOR ? "admin-herramientas" : "perfil");
+        setAuthInfo("Sesión iniciada correctamente.");
       } else {
         const nextPendingStudent = registerPendingStudent(authCatalog, authForm);
         setPendingStudents((current) => [...current, nextPendingStudent]);
@@ -251,7 +297,7 @@ function App() {
           email: nextPendingStudent.Email
         });
         setSection("perfil");
-        setAuthInfo("Cuenta creada como pendingalumnos. Un administrador deberá revisarla.");
+        setAuthInfo("Solicitud enviada. Un administrador la revisará antes de activar tu acceso.");
       }
 
       setAuthForm(EMPTY_AUTH_FORM);
@@ -260,6 +306,37 @@ function App() {
     } finally {
       setAuthLoading(false);
     }
+  }
+
+  function handleApprovePendingStudent(studentId) {
+    setPendingStudents((currentPending) => {
+      const studentToApprove = currentPending.find((student) => student.id === studentId);
+      if (!studentToApprove) return currentPending;
+
+      setApprovedStudents((currentApproved) => {
+        const approvedStudent = {
+          ...studentToApprove,
+          Status: ROLE_KEYS.STUDENT
+        };
+        return mergeStudents(currentApproved, [approvedStudent]);
+      });
+
+      if (session?.id === studentId) {
+        setSession({
+          id: studentToApprove.id,
+          roleKey: ROLE_KEYS.STUDENT,
+          source: "student",
+          email: studentToApprove.Email
+        });
+      }
+
+      setAuthInfo(`Alumno ${studentToApprove.Name} aceptado correctamente.`);
+      return currentPending.filter((student) => student.id !== studentId);
+    });
+  }
+
+  function handleRemovePendingStudent(studentId) {
+    setPendingStudents((currentPending) => currentPending.filter((student) => student.id !== studentId));
   }
 }
 
@@ -275,19 +352,12 @@ function buildProfileFromSession(session, students, administrators, pendingStude
     };
   }
 
-  const collectionsBySource = {
-    student: students,
-    administrator: administrators,
-    "local-pending": pendingStudents
-  };
-
-  const currentCollection = collectionsBySource[session.source] || [];
-  const currentUser = currentCollection.find((item) => item.id === session.id || item.Email === session.email);
+  const currentUser = findSessionUser(session, students, administrators, pendingStudents);
 
   return {
     name: currentUser?.Name || currentUser?.name || "Usuario",
     email: currentUser?.Email || session.email || "",
-    role: getRoleLabel(session.roleKey),
+    role: getProfileRoleLabel(session.roleKey),
     curso: currentUser?.Curso || "No definido",
     phone: currentUser?.Phone || "No definido",
     photo: session.roleKey === ROLE_KEYS.ADMINISTRATOR
@@ -296,14 +366,24 @@ function buildProfileFromSession(session, students, administrators, pendingStude
   };
 }
 
+function findSessionUser(session, students, administrators, pendingStudents) {
+  const collectionsBySource = {
+    student: students,
+    administrator: administrators,
+    "local-pending": pendingStudents
+  };
+
+  const currentCollection = collectionsBySource[session?.source] || [];
+  return currentCollection.find((item) => item.id === session?.id || item.Email === session?.email) || null;
+}
+
 function buildAuthCatalog(students, administrators, pendingStudents) {
   const remoteStudents = students.map((student) => ({
     id: student.id,
     email: String(student.Email || "").trim().toLowerCase(),
     password: student.Password || student.password || "",
     roleKey: normalizeRole(student.Status ?? student.status, ROLE_KEYS.STUDENT),
-    source: "student",
-    data: student
+    source: "student"
   }));
 
   const remoteAdministrators = administrators.map((administrator) => ({
@@ -311,8 +391,7 @@ function buildAuthCatalog(students, administrators, pendingStudents) {
     email: String(administrator.Email || administrator.email || "").trim().toLowerCase(),
     password: administrator.Password || administrator.password || "",
     roleKey: ROLE_KEYS.ADMINISTRATOR,
-    source: "administrator",
-    data: administrator
+    source: "administrator"
   }));
 
   const localPendingStudents = pendingStudents.map((student) => ({
@@ -320,8 +399,7 @@ function buildAuthCatalog(students, administrators, pendingStudents) {
     email: String(student.Email || "").trim().toLowerCase(),
     password: student.Password || "",
     roleKey: ROLE_KEYS.PENDING_STUDENT,
-    source: "local-pending",
-    data: student
+    source: "local-pending"
   }));
 
   return [...remoteStudents, ...remoteAdministrators, ...localPendingStudents].filter((account) => account.email);
@@ -337,7 +415,7 @@ function authenticateUser(authCatalog, authForm) {
 
   const account = authCatalog.find((candidate) => candidate.email === email);
   if (!account) {
-    throw new Error("No existe ninguna cuenta con ese correo en alumnos, pendingalumnos o administradores.");
+    throw new Error("No existe ninguna cuenta con ese correo.");
   }
 
   if (account.password && account.password !== password) {
@@ -356,12 +434,11 @@ function registerPendingStudent(authCatalog, authForm) {
   const name = String(authForm.name || "").trim();
   const email = String(authForm.email || "").trim().toLowerCase();
   const phone = String(authForm.phone || "").trim();
-  const age = String(authForm.age || "").trim();
   const curso = String(authForm.curso || "").trim();
   const password = String(authForm.password || "").trim();
   const confirmPassword = String(authForm.confirmPassword || "").trim();
 
-  if (!name || !email || !phone || !age || !curso || !password || !confirmPassword) {
+  if (!name || !email || !phone || !curso || !password || !confirmPassword) {
     throw new Error("Completa todos los campos del registro.");
   }
 
@@ -382,11 +459,25 @@ function registerPendingStudent(authCatalog, authForm) {
     Name: name,
     Email: email,
     Phone: phone,
-    Age: Number(age),
     Curso: curso,
     Password: password,
     Status: ROLE_KEYS.PENDING_STUDENT
   };
+}
+
+function mergeStudents(baseStudents, extraStudents) {
+  const mergedById = new Map();
+  [...baseStudents, ...extraStudents].forEach((student) => {
+    if (!student?.id) return;
+    mergedById.set(student.id, student);
+  });
+  return Array.from(mergedById.values());
+}
+
+function getProfileRoleLabel(roleKey) {
+  if (roleKey === ROLE_KEYS.ADMINISTRATOR) return "Administrador";
+  if (roleKey === ROLE_KEYS.PENDING_STUDENT) return "Pendiente de validación";
+  return "Alumno";
 }
 
 function readJsonStorage(storageKey, fallbackValue) {
@@ -407,7 +498,7 @@ function writeJsonStorage(storageKey, value) {
 
     window.localStorage.setItem(storageKey, JSON.stringify(value));
   } catch (error) {
-    // Ignoramos fallos de almacenamiento para no romper la UI.
+    // Si el almacenamiento falla, la app sigue funcionando con el estado en memoria.
   }
 }
 
