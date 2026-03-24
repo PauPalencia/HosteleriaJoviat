@@ -21,6 +21,7 @@ test("renders sidebar title", async () => {
 
   render(<App />);
   expect(await screen.findByText(/JOVIAT/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /login \/ sign in/i })).toBeInTheDocument();
 });
 
 test("keeps auth page reachable when Firestore preload fails", async () => {
@@ -33,7 +34,7 @@ test("keeps auth page reachable when Firestore preload fails", async () => {
   });
 
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: /login \/ registro/i }));
+  fireEvent.click(screen.getByRole("button", { name: /login \/ sign in/i }));
 
   expect(await screen.findByRole("heading", { name: /iniciar sesión/i })).toBeInTheDocument();
   expect(screen.getByText(/no se han podido cargar las colecciones remotas/i)).toBeInTheDocument();
@@ -67,7 +68,7 @@ test("profile does not expose the first student before login", async () => {
   expect(screen.queryByText(/Alumno Visible/i)).not.toBeInTheDocument();
 });
 
-test("shows admin-only tabs and logout button for administrators", async () => {
+test("shows admin-only tabs and hides login item for authenticated administrators", async () => {
   process.env.REACT_APP_FIREBASE_PROJECT_ID = "demo-project";
   window.localStorage.setItem(
     "hosteleria-joviat-session",
@@ -99,8 +100,11 @@ test("shows admin-only tabs and logout button for administrators", async () => {
   render(<App />);
 
   expect(await screen.findByRole("button", { name: /aceptar alumnos/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /crear alumnos validados/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /crear restaurantes/i })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /administradores/i })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /salir del usuario/i })).toBeInTheDocument();
+  expect(screen.queryByText(/^Login \/ Sign in$/i)).not.toBeInTheDocument();
 });
 
 test("registration screen hides role copy", async () => {
@@ -108,8 +112,8 @@ test("registration screen hides role copy", async () => {
   mockFirestoreFetch([{ documents: [] }, { documents: [] }, { documents: [] }, { documents: [] }]);
 
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: /login \/ registro/i }));
-  fireEvent.click((await screen.findAllByRole("button", { name: /registro/i }))[1]);
+  fireEvent.click(screen.getByRole("button", { name: /login \/ sign in/i }));
+  fireEvent.click((await screen.findAllByRole("button", { name: /registro/i }))[0]);
 
   expect(screen.queryByText(/rol al registrarte/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/tres perfiles/i)).not.toBeInTheDocument();
