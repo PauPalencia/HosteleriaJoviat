@@ -7,15 +7,20 @@ export default function LayoutNav({ isMobile, section, onNavigate, onProfile, on
     const baseItems = [
       { key: "inicio", label: "Inicio" },
       { key: "alumnos", label: "Alumnos" },
-      { key: "restaurantes", label: "Restaurantes" },
-      { key: "auth", label: isAuthenticated ? "Cuenta" : "Login / Registro" }
+      { key: "restaurantes", label: "Restaurantes" }
     ];
 
     if (isAdmin) {
-      baseItems.splice(3, 0,
+      baseItems.push(
         { key: "admin-pendientes", label: "Aceptar alumnos" },
+        { key: "admin-crear-alumnos", label: "Crear alumnos validados" },
+        { key: "admin-crear-restaurantes", label: "Crear restaurantes" },
         { key: "admin-herramientas", label: "Administradores" }
       );
+    }
+
+    if (!isAuthenticated) {
+      baseItems.push({ key: "auth", label: "Login / Sign in" });
     }
 
     return baseItems;

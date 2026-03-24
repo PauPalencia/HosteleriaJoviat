@@ -10,10 +10,13 @@ import RestaurantDetailPage from "./pages/RestaurantDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPendingPage from "./pages/AdminPendingPage";
 import AdminManagementPage from "./pages/AdminManagementPage";
+import AdminCreateStudentPage from "./pages/AdminCreateStudentPage";
+import AdminCreateRestaurantPage from "./pages/AdminCreateRestaurantPage";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { loadFirestoreData } from "./utils/firestore";
 import { buildViewModel, normalizeRole, ROLE_KEYS } from "./utils/models";
 import { getStudentPhoto } from "./utils/ui";
+import { createFirebaseAuthUser } from "./utils/firebaseAuth";
 
 const EMPTY_AUTH_FORM = {
   name: "",
@@ -27,6 +30,8 @@ const EMPTY_AUTH_FORM = {
 const SESSION_STORAGE_KEY = "hosteleria-joviat-session";
 const PENDING_USERS_STORAGE_KEY = "hosteleria-joviat-pending-users";
 const APPROVED_USERS_STORAGE_KEY = "hosteleria-joviat-approved-users";
+const LOCAL_RESTAURANTS_STORAGE_KEY = "hosteleria-joviat-local-restaurants";
+const LOCAL_RELATIONS_STORAGE_KEY = "hosteleria-joviat-local-relations";
 
 function App() {
   const isMobile = useIsMobile(900);
@@ -39,6 +44,8 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authInfo, setAuthInfo] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [adminFeedback, setAdminFeedback] = useState({ type: "", text: "" });
+  const [pendingActionId, setPendingActionId] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
 
@@ -47,6 +54,8 @@ function App() {
   const [dataState, setDataState] = useState({ students: [], restaurants: [], relations: [], administrators: [] });
   const [pendingStudents, setPendingStudents] = useState(() => readJsonStorage(PENDING_USERS_STORAGE_KEY, []));
   const [approvedStudents, setApprovedStudents] = useState(() => readJsonStorage(APPROVED_USERS_STORAGE_KEY, []));
+  const [localRestaurants, setLocalRestaurants] = useState(() => readJsonStorage(LOCAL_RESTAURANTS_STORAGE_KEY, []));
+  const [localRelations, setLocalRelations] = useState(() => readJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, []));
   const [session, setSession] = useState(() => readJsonStorage(SESSION_STORAGE_KEY, null));
 
   useEffect(() => {
@@ -78,20 +87,30 @@ function App() {
   }, [approvedStudents]);
 
   useEffect(() => {
+    writeJsonStorage(LOCAL_RESTAURANTS_STORAGE_KEY, localRestaurants);
+  }, [localRestaurants]);
+
+  useEffect(() => {
+    writeJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, localRelations);
+  }, [localRelations]);
+
+  useEffect(() => {
     writeJsonStorage(SESSION_STORAGE_KEY, session);
   }, [session]);
 
-  // Mezclamos alumnos remotos con los aprobados localmente para que el admin los vea ya como alumnos activos.
-  const allStudents = useMemo(() => mergeStudents(dataState.students, approvedStudents), [dataState.students, approvedStudents]);
+  const allStudents = useMemo(() => mergeById(dataState.students, approvedStudents), [dataState.students, approvedStudents]);
+  const allRestaurants = useMemo(() => mergeById(dataState.restaurants, localRestaurants), [dataState.restaurants, localRestaurants]);
+  const allRelations = useMemo(() => [...dataState.relations, ...localRelations], [dataState.relations, localRelations]);
+
   const vm = useMemo(
-    () => buildViewModel({ ...dataState, students: allStudents }),
-    [allStudents, dataState]
+    () => buildViewModel({ students: allStudents, restaurants: allRestaurants, relations: allRelations }),
+    [allStudents, allRestaurants, allRelations]
   );
 
   const filteredStudents = allStudents.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
   );
-  const filteredRestaurants = dataState.restaurants.filter((restaurant) =>
+  const filteredRestaurants = allRestaurants.filter((restaurant) =>
     restaurant.Name?.toLowerCase().includes(searchRestaurants.toLowerCase())
   );
 
@@ -131,6 +150,9 @@ function App() {
       <main className="content">
         {loading && !isAuthSection && <p className="state-text">Cargando datos desde Firestore…</p>}
         {error && !isAuthSection && <p className="error-box">Error: {error}</p>}
+        {!isAuthSection && adminFeedback.text && (
+          <p className={adminFeedback.type === "error" ? "error-box" : "info-box"}>{adminFeedback.text}</p>
+        )}
 
         {section === "inicio" && canRenderDataSection && <InicioPage />}
 
@@ -207,6 +229,22 @@ function App() {
             pendingStudents={pendingStudents}
             onApprove={handleApprovePendingStudent}
             onRemove={handleRemovePendingStudent}
+            pendingActionId={pendingActionId}
+          />
+        )}
+
+        {section === "admin-crear-alumnos" && isAdmin && (
+          <AdminCreateStudentPage
+            restaurants={allRestaurants}
+            onCreateStudent={handleCreateValidatedStudent}
+            isSubmitting={pendingActionId === "create-student"}
+          />
+        )}
+
+        {section === "admin-crear-restaurantes" && isAdmin && (
+          <AdminCreateRestaurantPage
+            onCreateRestaurant={handleCreateRestaurant}
+            isSubmitting={pendingActionId === "create-restaurant"}
           />
         )}
 
@@ -217,7 +255,7 @@ function App() {
             pendingStudents={pendingStudents}
             approvedStudents={approvedStudents}
             totalStudents={allStudents.length}
-            totalRestaurants={dataState.restaurants.length}
+            totalRestaurants={allRestaurants.length}
           />
         )}
 
@@ -239,7 +277,7 @@ function App() {
               conexión vuelva a funcionar.
             </p>
             <button type="button" className="primary-btn" onClick={() => handleSectionChange("auth")}>
-              Ir a login / registro
+              Ir a login / sign in
             </button>
           </section>
         )}
@@ -253,6 +291,7 @@ function App() {
     setSelectedRestaurantId(null);
     setAuthError("");
     setAuthInfo("");
+    setAdminFeedback({ type: "", text: "" });
   }
 
   function handleLogout() {
@@ -308,35 +347,110 @@ function App() {
     }
   }
 
-  function handleApprovePendingStudent(studentId) {
-    setPendingStudents((currentPending) => {
-      const studentToApprove = currentPending.find((student) => student.id === studentId);
-      if (!studentToApprove) return currentPending;
+  async function handleApprovePendingStudent(studentId) {
+    const studentToApprove = pendingStudents.find((student) => student.id === studentId);
+    if (!studentToApprove) return;
 
-      setApprovedStudents((currentApproved) => {
-        const approvedStudent = {
-          ...studentToApprove,
-          Status: ROLE_KEYS.STUDENT
-        };
-        return mergeStudents(currentApproved, [approvedStudent]);
+    setPendingActionId(studentId);
+    setAdminFeedback({ type: "", text: "" });
+
+    try {
+      const firebaseUser = await createFirebaseAuthUser({
+        email: studentToApprove.Email,
+        password: studentToApprove.Password
       });
+
+      const approvedStudent = {
+        ...studentToApprove,
+        Status: ROLE_KEYS.STUDENT,
+        FirebaseAuthUid: firebaseUser.uid
+      };
+
+      setApprovedStudents((currentApproved) => mergeById(currentApproved, [approvedStudent]));
+      setPendingStudents((currentPending) => currentPending.filter((student) => student.id !== studentId));
+      setAdminFeedback({ type: "info", text: `Alumno ${studentToApprove.Name} aceptado y creado en Firebase Auth.` });
 
       if (session?.id === studentId) {
         setSession({
-          id: studentToApprove.id,
+          id: approvedStudent.id,
           roleKey: ROLE_KEYS.STUDENT,
           source: "student",
-          email: studentToApprove.Email
+          email: approvedStudent.Email
         });
       }
-
-      setAuthInfo(`Alumno ${studentToApprove.Name} aceptado correctamente.`);
-      return currentPending.filter((student) => student.id !== studentId);
-    });
+    } catch (approveError) {
+      setAdminFeedback({ type: "error", text: approveError.message });
+    } finally {
+      setPendingActionId("");
+    }
   }
 
   function handleRemovePendingStudent(studentId) {
     setPendingStudents((currentPending) => currentPending.filter((student) => student.id !== studentId));
+    setAdminFeedback({ type: "info", text: "Solicitud eliminada." });
+  }
+
+  async function handleCreateValidatedStudent(studentPayload) {
+    setPendingActionId("create-student");
+    setAdminFeedback({ type: "", text: "" });
+
+    try {
+      const firebaseUser = await createFirebaseAuthUser({
+        email: studentPayload.Email,
+        password: studentPayload.Password
+      });
+
+      const studentId = `student-${Date.now()}`;
+      const newStudent = {
+        id: studentId,
+        ...studentPayload,
+        Status: ROLE_KEYS.STUDENT,
+        FirebaseAuthUid: firebaseUser.uid
+      };
+
+      setApprovedStudents((currentApproved) => mergeById(currentApproved, [newStudent]));
+
+      if (studentPayload.restaurantId) {
+        setLocalRelations((currentRelations) => [
+          ...currentRelations,
+          {
+            id: `relation-${Date.now()}`,
+            id_alumni: studentId,
+            id_restaurant: studentPayload.restaurantId,
+            rol: studentPayload.workRole,
+            current_job: Boolean(studentPayload.currentJob)
+          }
+        ]);
+      }
+
+      setAdminFeedback({ type: "info", text: `Alumno validado ${newStudent.Name} creado correctamente.` });
+      setSection("alumnos");
+    } catch (createError) {
+      setAdminFeedback({ type: "error", text: createError.message });
+    } finally {
+      setPendingActionId("");
+    }
+  }
+
+  function handleCreateRestaurant(restaurantPayload) {
+    setPendingActionId("create-restaurant");
+    setAdminFeedback({ type: "", text: "" });
+
+    const newRestaurant = {
+      id: `restaurant-${Date.now()}`,
+      Name: restaurantPayload.name,
+      Address: restaurantPayload.address,
+      Email: restaurantPayload.email,
+      Phone: restaurantPayload.phone,
+      Location: restaurantPayload.lat && restaurantPayload.lng
+        ? { lat: Number(restaurantPayload.lat), lng: Number(restaurantPayload.lng) }
+        : null
+    };
+
+    setLocalRestaurants((currentRestaurants) => mergeById(currentRestaurants, [newRestaurant]));
+    setAdminFeedback({ type: "info", text: `Restaurante ${newRestaurant.Name} creado correctamente.` });
+    setPendingActionId("");
+    setSection("restaurantes");
   }
 }
 
@@ -465,11 +579,11 @@ function registerPendingStudent(authCatalog, authForm) {
   };
 }
 
-function mergeStudents(baseStudents, extraStudents) {
+function mergeById(baseItems, extraItems) {
   const mergedById = new Map();
-  [...baseStudents, ...extraStudents].forEach((student) => {
-    if (!student?.id) return;
-    mergedById.set(student.id, student);
+  [...baseItems, ...extraItems].forEach((item) => {
+    if (!item?.id) return;
+    mergedById.set(item.id, item);
   });
   return Array.from(mergedById.values());
 }
