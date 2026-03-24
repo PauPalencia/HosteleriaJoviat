@@ -299,6 +299,11 @@ body {
   color: #374151;
 }
 
+.optional-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
 .compact-grid {
   gap: 0.8rem;
 }

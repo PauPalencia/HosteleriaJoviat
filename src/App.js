@@ -395,6 +395,10 @@ function App() {
     setAdminFeedback({ type: "", text: "" });
 
     try {
+      if (!studentPayload.Email || !studentPayload.Password) {
+        throw new Error("Para crear un alumno validado debes indicar correo y contraseña.");
+      }
+
       const firebaseUser = await createFirebaseAuthUser({
         email: studentPayload.Email,
         password: studentPayload.Password
