@@ -13,7 +13,7 @@ import AdminManagementPage from "./pages/AdminManagementPage";
 import AdminCreateStudentPage from "./pages/AdminCreateStudentPage";
 import AdminCreateRestaurantPage from "./pages/AdminCreateRestaurantPage";
 import { useIsMobile } from "./hooks/useIsMobile";
-import { loadFirestoreData } from "./utils/firestore";
+import { addFirestoreDocument, loadFirestoreData } from "./utils/firestore";
 import { buildViewModel, normalizeRole, ROLE_KEYS } from "./utils/models";
 import { getStudentPhoto } from "./utils/ui";
 import { createFirebaseAuthUser } from "./utils/firebaseAuth";
@@ -408,19 +408,37 @@ function App() {
         FirebaseAuthUid: firebaseUser.uid
       };
 
+      try {
+        await addFirestoreDocument("Alumnos", buildStudentFirestorePayload(newStudent), studentId);
+      } catch (saveError) {
+        setAdminFeedback({
+          type: "error",
+          text: `Alumno creado en Auth pero no se pudo guardar en Firestore. Se mantiene localmente. ${saveError.message}`
+        });
+      }
+
       setApprovedStudents((currentApproved) => mergeById(currentApproved, [newStudent]));
 
       if (studentPayload.restaurantId) {
-        setLocalRelations((currentRelations) => [
-          ...currentRelations,
-          {
-            id: `relation-${Date.now()}`,
-            id_alumni: studentId,
-            id_restaurant: studentPayload.restaurantId,
-            rol: studentPayload.workRole,
-            current_job: Boolean(studentPayload.currentJob)
-          }
-        ]);
+        const relationId = `relation-${Date.now()}`;
+        const relation = {
+          id: relationId,
+          id_alumni: studentId,
+          id_restaurant: studentPayload.restaurantId,
+          rol: studentPayload.workRole,
+          current_job: Boolean(studentPayload.currentJob)
+        };
+
+        try {
+          await addFirestoreDocument("Res-Alum", buildRelationFirestorePayload(relation), relationId);
+          setDataState((current) => ({ ...current, relations: [...current.relations, relation] }));
+        } catch (saveError) {
+          setLocalRelations((currentRelations) => [...currentRelations, relation]);
+          setAdminFeedback({
+            type: "error",
+            text: `Relación laboral guardada solo en local. ${saveError.message}`
+          });
+        }
       }
 
       setAdminFeedback({ type: "info", text: `Alumno validado ${newStudent.Name} creado correctamente.` });
@@ -432,26 +450,90 @@ function App() {
     }
   }
 
-  function handleCreateRestaurant(restaurantPayload) {
+  async function handleCreateRestaurant(restaurantPayload) {
     setPendingActionId("create-restaurant");
     setAdminFeedback({ type: "", text: "" });
 
-    const newRestaurant = {
-      id: `restaurant-${Date.now()}`,
-      Name: restaurantPayload.name,
-      Address: restaurantPayload.address,
-      Email: restaurantPayload.email,
-      Phone: restaurantPayload.phone,
-      Location: restaurantPayload.lat && restaurantPayload.lng
-        ? { lat: Number(restaurantPayload.lat), lng: Number(restaurantPayload.lng) }
-        : null
-    };
+    try {
+      const restaurantId = `restaurant-${Date.now()}`;
+      const newRestaurant = {
+        id: restaurantId,
+        Name: restaurantPayload.name,
+        Address: restaurantPayload.address,
+        Email: restaurantPayload.email,
+        Phone: restaurantPayload.phone,
+        Location: restaurantPayload.lat && restaurantPayload.lng
+          ? { lat: Number(restaurantPayload.lat), lng: Number(restaurantPayload.lng) }
+          : null
+      };
 
-    setLocalRestaurants((currentRestaurants) => mergeById(currentRestaurants, [newRestaurant]));
-    setAdminFeedback({ type: "info", text: `Restaurante ${newRestaurant.Name} creado correctamente.` });
-    setPendingActionId("");
-    setSection("restaurantes");
+      const savedRestaurant = await addFirestoreDocument(
+        "Restaurante",
+        buildRestaurantFirestorePayload(newRestaurant),
+        restaurantId
+      );
+
+      setDataState((current) => ({
+        ...current,
+        restaurants: mergeById(current.restaurants, [savedRestaurant])
+      }));
+      setLocalRestaurants((currentRestaurants) => currentRestaurants.filter((item) => item.id !== restaurantId));
+      setAdminFeedback({ type: "info", text: `Restaurante ${savedRestaurant.Name} creado en Firestore correctamente.` });
+      setSection("restaurantes");
+    } catch (saveError) {
+      const fallbackRestaurant = {
+        id: `restaurant-${Date.now()}`,
+        Name: restaurantPayload.name,
+        Address: restaurantPayload.address,
+        Email: restaurantPayload.email,
+        Phone: restaurantPayload.phone,
+        Location: restaurantPayload.lat && restaurantPayload.lng
+          ? { lat: Number(restaurantPayload.lat), lng: Number(restaurantPayload.lng) }
+          : null
+      };
+
+      setLocalRestaurants((currentRestaurants) => mergeById(currentRestaurants, [fallbackRestaurant]));
+      setAdminFeedback({
+        type: "error",
+        text: `No se pudo guardar en Firestore, el restaurante se guardó en local. ${saveError.message}`
+      });
+      setSection("restaurantes");
+    } finally {
+      setPendingActionId("");
+    }
   }
+}
+
+function buildRestaurantFirestorePayload(restaurant) {
+  return {
+    Name: restaurant.Name || "",
+    Address: restaurant.Address || "",
+    Email: restaurant.Email || "",
+    Phone: restaurant.Phone || "",
+    Location: restaurant.Location || null
+  };
+}
+
+function buildStudentFirestorePayload(student) {
+  return {
+    Name: student.Name || "",
+    Email: student.Email || "",
+    Phone: student.Phone || "",
+    Curso: student.Curso || "",
+    LinkedIn: student.LinkedIn || "",
+    Password: student.Password || "",
+    Status: student.Status || ROLE_KEYS.STUDENT,
+    FirebaseAuthUid: student.FirebaseAuthUid || ""
+  };
+}
+
+function buildRelationFirestorePayload(relation) {
+  return {
+    id_alumni: relation.id_alumni,
+    id_restaurant: relation.id_restaurant,
+    rol: relation.rol || "",
+    current_job: Boolean(relation.current_job)
+  };
 }
 
 function buildProfileFromSession(session, students, administrators, pendingStudents) {
