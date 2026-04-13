@@ -329,14 +329,13 @@ function App() {
       } else {
         const nextPendingStudent = registerPendingStudent(authCatalog, authForm);
         setPendingStudents((current) => [...current, nextPendingStudent]);
-        setSession({
-          id: nextPendingStudent.id,
-          roleKey: ROLE_KEYS.PENDING_STUDENT,
-          source: "local-pending",
-          email: nextPendingStudent.Email
+        // No iniciamos sesión automáticamente: la solicitud queda pendiente de revisión.
+        setSession(null);
+        setSection("inicio");
+        setAdminFeedback({
+          type: "info",
+          text: "Solicitud enviada correctamente. Cuando un administrador te valide, podrás iniciar sesión."
         });
-        setSection("perfil");
-        setAuthInfo("Solicitud enviada. Un administrador la revisará antes de activar tu acceso.");
       }
 
       setAuthForm(EMPTY_AUTH_FORM);
