@@ -1,27 +1,51 @@
+export const ROLE_KEYS = {
+  STUDENT: "alumnos",
+  PENDING_STUDENT: "pendingalumnos",
+  ADMINISTRATOR: "administradores"
+};
+
+const ROLE_LABELS = {
+  [ROLE_KEYS.STUDENT]: "Alumno",
+  [ROLE_KEYS.PENDING_STUDENT]: "PendingAlumno",
+  [ROLE_KEYS.ADMINISTRATOR]: "Administrador"
+};
+
 export function ensureArray(value) {
   if (Array.isArray(value)) return value;
   if (value === undefined || value === null) return [];
   return [value];
 }
 
-export function normalizeStatus(statusValue) {
+// Normaliza cualquier status legado para dejar solo los tres tipos de rol pedidos.
+export function normalizeRole(statusValue, fallbackRole = ROLE_KEYS.STUDENT) {
   const raw = String(statusValue || "").trim();
-  if (!raw) return "Sin status";
+  if (!raw) return fallbackRole;
 
-  const lower = raw.toLowerCase();
-  if (["alumne", "alumno", "alumna"].includes(lower)) return "Alumno";
-  if (["exalumne", "exalumno", "exalumna"].includes(lower)) return "Exalumno";
+  const compact = raw.toLowerCase().replace(/[\s_-]+/g, "");
 
-  return raw;
+  if (["admin", "administrator", "administrador", "administradores"].includes(compact)) {
+    return ROLE_KEYS.ADMINISTRATOR;
+  }
+
+  if (["pendingalumno", "pendingalumnos", "pendentingalumnos", "pendingstudent", "pendingstudents", "pending"].includes(compact)) {
+    return ROLE_KEYS.PENDING_STUDENT;
+  }
+
+  return ROLE_KEYS.STUDENT;
+}
+
+export function getRoleLabel(roleKey) {
+  return ROLE_LABELS[roleKey] || ROLE_LABELS[ROLE_KEYS.STUDENT];
 }
 
 export function getCurrentJobFlag(relation) {
   return Boolean(relation.current_job ?? relation.currentjob);
 }
 
+// Construye las relaciones para las pantallas públicas y mantiene el etiquetado coherente.
 export function buildViewModel({ students, restaurants, relations }) {
-  const studentById = Object.fromEntries(students.map((s) => [s.id, s]));
-  const restaurantById = Object.fromEntries(restaurants.map((r) => [r.id, r]));
+  const studentById = Object.fromEntries(students.map((student) => [student.id, student]));
+  const restaurantById = Object.fromEntries(restaurants.map((restaurant) => [restaurant.id, restaurant]));
 
   const jobsByStudentId = {};
   const jobsByRestaurantId = {};
@@ -57,7 +81,7 @@ export function buildViewModel({ students, restaurants, relations }) {
   students.forEach((student) => {
     const jobs = jobsByStudentId[student.id] || [];
     studentSummaryById[student.id] = {
-      alumniType: normalizeStatus(student.Status ?? student.status),
+      alumniType: getRoleLabel(normalizeRole(student.Status ?? student.status, ROLE_KEYS.STUDENT)),
       hasCurrentJob: jobs.some((job) => job.currentJob)
     };
   });

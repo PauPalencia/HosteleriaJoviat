@@ -2,15 +2,39 @@ const FIRESTORE_PROJECT_ID = process.env.REACT_APP_FIREBASE_PROJECT_ID;
 const FIRESTORE_DATABASE_ID = process.env.REACT_APP_FIREBASE_DATABASE_ID || "(default)";
 const FIRESTORE_API_KEY = process.env.REACT_APP_FIREBASE_API_KEY;
 
-// Carga de colecciones base de Firestore.
+// Carga de colecciones base de Firestore. Los administradores viven en su propia colección.
 export async function loadFirestoreData() {
-  const [students, restaurants, relations] = await Promise.all([
+  const [students, restaurants, relations, administrators] = await Promise.all([
     fetchCollection("Alumnos"),
     fetchCollection("Restaurante"),
-    fetchCollection("Res-Alum")
+    fetchCollection("Res-Alum"),
+    fetchCollection("Administrator")
   ]);
 
-  return { students, restaurants, relations };
+  return { students, restaurants, relations, administrators };
+}
+
+// Inserta un documento en Firestore usando la API REST.
+export async function addFirestoreDocument(collectionName, documentData, documentId) {
+  const baseUrl = buildFirestoreUrl(collectionName);
+  const requestUrl = documentId ? `${baseUrl}?documentId=${encodeURIComponent(documentId)}` : baseUrl;
+
+  const response = await fetch(requestUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      fields: serializeFirestoreFields(documentData)
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`No se pudo guardar en ${collectionName} (${response.status})`);
+  }
+
+  const createdDocument = await response.json();
+  return parseDocument(createdDocument);
 }
 
 async function fetchCollection(collectionName) {
@@ -53,7 +77,60 @@ function parseFirestoreField(fieldValue) {
       lng: Number(fieldValue.geoPointValue.longitude)
     };
   }
+  if (fieldValue.mapValue) {
+    return Object.entries(fieldValue.mapValue.fields || {}).reduce((acc, [fieldName, nestedField]) => {
+      acc[fieldName] = parseFirestoreField(nestedField);
+      return acc;
+    }, {});
+  }
   if (fieldValue.referenceValue) return fieldValue.referenceValue.split("/").pop();
   if (fieldValue.arrayValue) return (fieldValue.arrayValue.values || []).map(parseFirestoreField);
   return null;
+}
+
+function serializeFirestoreFields(data) {
+  return Object.entries(data || {}).reduce((acc, [key, value]) => {
+    if (value === undefined) return acc;
+    acc[key] = serializeFirestoreValue(value);
+    return acc;
+  }, {});
+}
+
+function serializeFirestoreValue(value) {
+  if (value === null) return { nullValue: null };
+  if (typeof value === "string") return { stringValue: value };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (Array.isArray(value)) {
+    return {
+      arrayValue: {
+        values: value.map(serializeFirestoreValue)
+      }
+    };
+  }
+
+  if (isGeoPoint(value)) {
+    return {
+      geoPointValue: {
+        latitude: Number(value.lat),
+        longitude: Number(value.lng)
+      }
+    };
+  }
+
+  if (typeof value === "object") {
+    return {
+      mapValue: {
+        fields: serializeFirestoreFields(value)
+      }
+    };
+  }
+
+  return { stringValue: String(value) };
+}
+
+function isGeoPoint(value) {
+  return value && typeof value === "object" && "lat" in value && "lng" in value;
 }
