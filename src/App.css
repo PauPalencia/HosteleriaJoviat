@@ -616,3 +616,121 @@ body {
     font-size: 1.6rem;
   }
 }
+
+/* ── Paginación ──────────────────────────────────────────────────────────── */
+
+/* Contenedor principal de la barra de paginación */
+.pagination-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+}
+
+/* Fila del selector "por página" */
+.pagination-size-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pagination-size-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-right: 0.2rem;
+}
+
+/* Botones de tamaño de página (4, 8, 12, 16) */
+.pagination-size-btn {
+  background: none;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.pagination-size-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+/* Botón activo (tamaño seleccionado) */
+.pagination-size-btn-active {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Barra de navegación de páginas */
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Base de los botones de página (números y flechas) */
+.pagination-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 0.45rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: none;
+  font-size: 0.9rem;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+/* Página activa resaltada en azul */
+.pagination-page-active {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+/* Flecha deshabilitada cuando estamos al principio/final */
+.pagination-btn:disabled {
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+/* Puntos suspensivos (no interactivos) */
+.pagination-ellipsis {
+  min-width: 28px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+  line-height: 34px;
+}
+
+/* Mensaje cuando no hay resultados */
+.empty-list-msg {
+  color: #9ca3af;
+  padding: 1rem 0;
+}
+
+@media (max-width: 640px) {
+  .pagination-btn {
+    min-width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+}

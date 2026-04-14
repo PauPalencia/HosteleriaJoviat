@@ -55,9 +55,9 @@ function App() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
 
-  // Historial de navegación: guarda el estado anterior cuando se navega de un detalle a otro
-  // Permite que el botón "volver" lleve de vuelta al elemento correcto
-  const [previousState, setPreviousState] = useState(null);
+  // Pila de navegación: se apila cada estado cuando navegamos de un detalle a otro
+  // Permite volver atrás nivel a nivel (restaurante → alumno → restaurante → ...)
+  const [navStack, setNavStack] = useState([]);
 
   // Controla si el popup de confirmación de cierre de sesión está abierto
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
@@ -183,8 +183,8 @@ function App() {
             jobs={vm.jobsByStudentId[selectedStudent.id] || []}
             onBack={handleBackFromStudentDetail}
             backLabel={
-              previousState?.section === "restaurantes"
-                ? `← Volver al restaurante`
+              navStack.at(-1)?.section === "restaurantes"
+                ? "← Volver al restaurante"
                 : "← Volver a alumnos"
             }
             onOpenRestaurant={handleOpenRestaurantFromStudent}
@@ -215,8 +215,8 @@ function App() {
             studentSummaryById={vm.studentSummaryById}
             onBack={handleBackFromRestaurantDetail}
             backLabel={
-              previousState?.section === "alumnos"
-                ? `← Volver al alumno`
+              navStack.at(-1)?.section === "alumnos"
+                ? "← Volver al alumno"
                 : "← Volver a restaurantes"
             }
             onOpenStudent={handleOpenStudentFromRestaurant}
@@ -342,54 +342,56 @@ function App() {
 
   // ─── NAVEGACIÓN ───────────────────────────────────────────────────────────
 
-  // Cambia de sección desde el menú, limpiando siempre el historial y las selecciones
+  // Cambia de sección desde el menú, limpiando siempre la pila y las selecciones
   function handleSectionChange(nextSection) {
     setSection(nextSection);
     setSelectedStudentId(null);
     setSelectedRestaurantId(null);
-    setPreviousState(null);
+    setNavStack([]);
     setAuthError("");
     setAuthInfo("");
     setAdminFeedback({ type: "", text: "" });
   }
 
   // Abre el detalle de un restaurante desde la ficha de un alumno
-  // Guarda el estado actual para poder volver con el botón "atrás"
+  // Empuja el estado actual a la pila para poder volver nivel a nivel
   function handleOpenRestaurantFromStudent(restaurantId) {
-    setPreviousState({ section: "alumnos", selectedStudentId, selectedRestaurantId: null });
+    setNavStack((stack) => [...stack, { section: "alumnos", selectedStudentId, selectedRestaurantId: null }]);
     setSection("restaurantes");
     setSelectedRestaurantId(restaurantId);
   }
 
   // Abre el detalle de un alumno desde la ficha de un restaurante
-  // Guarda el estado actual para poder volver con el botón "atrás"
+  // Empuja el estado actual a la pila para poder volver nivel a nivel
   function handleOpenStudentFromRestaurant(studentId) {
-    setPreviousState({ section: "restaurantes", selectedStudentId: null, selectedRestaurantId });
+    setNavStack((stack) => [...stack, { section: "restaurantes", selectedStudentId: null, selectedRestaurantId }]);
     setSection("alumnos");
     setSelectedStudentId(studentId);
   }
 
-  // Botón volver en el detalle de un alumno:
-  // si hay estado previo (venimos de un restaurante) restaura ese estado, si no vuelve al listado
+  // Volver atrás desde el detalle de un alumno:
+  // saca el último estado de la pila y lo restaura, o va al listado si la pila está vacía
   function handleBackFromStudentDetail() {
-    if (previousState) {
-      setSection(previousState.section);
-      setSelectedStudentId(previousState.selectedStudentId);
-      setSelectedRestaurantId(previousState.selectedRestaurantId);
-      setPreviousState(null);
+    if (navStack.length > 0) {
+      const prev = navStack[navStack.length - 1];
+      setNavStack((stack) => stack.slice(0, -1));
+      setSection(prev.section);
+      setSelectedStudentId(prev.selectedStudentId);
+      setSelectedRestaurantId(prev.selectedRestaurantId);
     } else {
       setSelectedStudentId(null);
     }
   }
 
-  // Botón volver en el detalle de un restaurante:
-  // si hay estado previo (venimos de un alumno) restaura ese estado, si no vuelve al listado
+  // Volver atrás desde el detalle de un restaurante:
+  // saca el último estado de la pila y lo restaura, o va al listado si la pila está vacía
   function handleBackFromRestaurantDetail() {
-    if (previousState) {
-      setSection(previousState.section);
-      setSelectedStudentId(previousState.selectedStudentId);
-      setSelectedRestaurantId(previousState.selectedRestaurantId);
-      setPreviousState(null);
+    if (navStack.length > 0) {
+      const prev = navStack[navStack.length - 1];
+      setNavStack((stack) => stack.slice(0, -1));
+      setSection(prev.section);
+      setSelectedStudentId(prev.selectedStudentId);
+      setSelectedRestaurantId(prev.selectedRestaurantId);
     } else {
       setSelectedRestaurantId(null);
     }
@@ -588,9 +590,9 @@ function App() {
       ...current,
       students: current.students.filter((s) => s.id !== studentId)
     }));
-    // Volver al listado tras borrar la ficha
+    // Volver al listado tras borrar la ficha y limpiar la pila
     setSelectedStudentId(null);
-    setPreviousState(null);
+    setNavStack([]);
     setAdminFeedback({ type: "info", text: "Ficha de alumno eliminada." });
   }
 

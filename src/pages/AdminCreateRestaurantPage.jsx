@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { usePlacesAutocomplete } from "../hooks/usePlacesAutocomplete";
 
+// Valores vacíos del formulario de creación de restaurante
 const EMPTY_FORM = {
   name: "",
   address: "",
@@ -13,13 +15,47 @@ const EMPTY_FORM = {
 export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmitting }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
+  // Ref del input de búsqueda de Google Places
+  const searchInputRef = useRef(null);
+
+  // Cuando el usuario selecciona un lugar en el autocompletado de Google Places,
+  // rellenamos automáticamente los campos del formulario con la información del lugar
+  usePlacesAutocomplete(searchInputRef, (placeData) => {
+    setForm((current) => ({
+      ...current,
+      name: placeData.name || current.name,
+      address: placeData.address || current.address,
+      phone: placeData.phone || current.phone,
+      lat: placeData.lat || current.lat,
+      lng: placeData.lng || current.lng
+    }));
+  });
+
   return (
     <section className="panel">
       <h2>Crear restaurantes</h2>
       <p className="section-helper-text">
-        Añade nuevos restaurantes para que luego puedan asignarse a alumnos y aparecer en el mapa.
+        Añade nuevos restaurantes. Usa el buscador de Google para autocompletar la información.
       </p>
 
+      {/* ── Buscador de Google Places ───────────────────────────────────────── */}
+      <div className="places-search-wrap">
+        <label className="auth-field">
+          <span>🔍 Buscar restaurante en Google Maps</span>
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Escribe el nombre del restaurante para buscarlo..."
+            className="places-search-input"
+          />
+        </label>
+        <p className="section-helper-text places-search-hint">
+          Al seleccionar un resultado, se rellenarán automáticamente nombre, dirección, teléfono y coordenadas.
+          Puedes editar cualquier campo manualmente después.
+        </p>
+      </div>
+
+      {/* ── Formulario manual (editable) ────────────────────────────────────── */}
       <form
         className="auth-form clean-auth-form"
         onSubmit={(event) => {
@@ -29,22 +65,22 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         }}
       >
         <label className="auth-field">
-          <span>Nombre</span>
+          <span>Nombre <strong>*</strong></span>
           <input value={form.name} onChange={(event) => updateField(setForm, "name", event.target.value)} required />
         </label>
 
         <label className="auth-field">
-          <span>Dirección</span>
+          <span>Dirección <strong>*</strong></span>
           <input value={form.address} onChange={(event) => updateField(setForm, "address", event.target.value)} required />
         </label>
 
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Email</span>
+            <span>Email <small className="optional-label">(opcional)</small></span>
             <input type="email" value={form.email} onChange={(event) => updateField(setForm, "email", event.target.value)} />
           </label>
           <label className="auth-field">
-            <span>Teléfono</span>
+            <span>Teléfono <small className="optional-label">(opcional)</small></span>
             <input value={form.phone} onChange={(event) => updateField(setForm, "phone", event.target.value)} />
           </label>
         </div>
@@ -72,14 +108,23 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
           </div>
         )}
 
+        {/* Coordenadas (se rellenan automáticamente desde Google Places) */}
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Latitud</span>
-            <input value={form.lat} onChange={(event) => updateField(setForm, "lat", event.target.value)} placeholder="41.733" />
+            <span>Latitud <small className="optional-label">(autocompletado)</small></span>
+            <input
+              value={form.lat}
+              onChange={(event) => updateField(setForm, "lat", event.target.value)}
+              placeholder="41.733"
+            />
           </label>
           <label className="auth-field">
-            <span>Longitud</span>
-            <input value={form.lng} onChange={(event) => updateField(setForm, "lng", event.target.value)} placeholder="1.826" />
+            <span>Longitud <small className="optional-label">(autocompletado)</small></span>
+            <input
+              value={form.lng}
+              onChange={(event) => updateField(setForm, "lng", event.target.value)}
+              placeholder="1.826"
+            />
           </label>
         </div>
 
@@ -91,6 +136,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
   );
 }
 
+// Actualiza un campo del formulario por clave
 function updateField(setForm, key, value) {
   setForm((current) => ({ ...current, [key]: value }));
 }
