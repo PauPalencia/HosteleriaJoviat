@@ -12,10 +12,13 @@ export default function LayoutNav({ isMobile, section, onNavigate, onProfile, on
 
     if (isAdmin) {
       baseItems.push(
-        { key: "admin-pendientes", label: "Aceptar alumnos" },
+        // Solicitudes pendientes de aprobación
+        { key: "admin-pendientes", label: "Solicitudes pendientes" },
+        // Alumnos ya aprobados
+        { key: "admin-aprobados", label: "Solicitudes aprobadas" },
         { key: "admin-crear-alumnos", label: "Crear alumnos validados" },
         { key: "admin-crear-restaurantes", label: "Crear restaurantes" },
-        { key: "admin-herramientas", label: "Administradores" }
+        { key: "admin-herramientas", label: "Panel de administración" }
       );
     }
 

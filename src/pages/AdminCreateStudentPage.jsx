@@ -6,6 +6,7 @@ const EMPTY_FORM = {
   phone: "",
   curso: "",
   linkedIn: "",
+  photoUrl: "",
   password: "",
   restaurantId: "",
   workRole: "",
@@ -48,6 +49,7 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
             Phone: form.phone.trim(),
             Curso: form.curso.trim(),
             LinkedIn: form.linkedIn.trim(),
+            PhotoURL: form.photoUrl.trim(),
             Password: form.password.trim(),
             restaurantId: form.restaurantId,
             workRole: form.workRole.trim(),
@@ -99,6 +101,29 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
           <span>LinkedIn <small className="optional-label">(opcional)</small></span>
           <input value={form.linkedIn} onChange={(event) => updateField(setForm, "linkedIn", event.target.value)} />
         </label>
+
+        {/* Campo para la URL de la foto de perfil del alumno */}
+        <label className="auth-field">
+          <span>URL de foto de perfil <small className="optional-label">(opcional)</small></span>
+          <input
+            type="url"
+            placeholder="https://ejemplo.com/foto.jpg"
+            value={form.photoUrl}
+            onChange={(event) => updateField(setForm, "photoUrl", event.target.value)}
+          />
+        </label>
+
+        {/* Previsualización de la foto si hay URL */}
+        {form.photoUrl && (
+          <div className="photo-preview-wrap">
+            <img
+              src={form.photoUrl}
+              alt="Previsualización"
+              className="photo-preview-img"
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+          </div>
+        )}
 
         <h3 className="admin-subtitle">Asignación opcional a restaurante</h3>
 

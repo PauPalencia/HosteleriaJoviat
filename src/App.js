@@ -12,6 +12,7 @@ import AdminPendingPage from "./pages/AdminPendingPage";
 import AdminManagementPage from "./pages/AdminManagementPage";
 import AdminCreateStudentPage from "./pages/AdminCreateStudentPage";
 import AdminCreateRestaurantPage from "./pages/AdminCreateRestaurantPage";
+import AdminApprovedStudentsPage from "./pages/AdminApprovedStudentsPage";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { addFirestoreDocument, loadFirestoreData } from "./utils/firestore";
 import { buildViewModel, normalizeRole, ROLE_KEYS } from "./utils/models";
@@ -36,19 +37,32 @@ const LOCAL_RELATIONS_STORAGE_KEY = "hosteleria-joviat-local-relations";
 function App() {
   const isMobile = useIsMobile(900);
 
+  // Sección activa de la navegación
   const [section, setSection] = useState("inicio");
+  // Búsquedas
   const [searchStudents, setSearchStudents] = useState("");
   const [searchRestaurants, setSearchRestaurants] = useState("");
+  // Autenticación
   const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState(EMPTY_AUTH_FORM);
   const [authError, setAuthError] = useState("");
   const [authInfo, setAuthInfo] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  // Feedback de administración
   const [adminFeedback, setAdminFeedback] = useState({ type: "", text: "" });
   const [pendingActionId, setPendingActionId] = useState("");
+  // Detalle seleccionado
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
 
+  // Historial de navegación: guarda el estado anterior cuando se navega de un detalle a otro
+  // Permite que el botón "volver" lleve de vuelta al elemento correcto
+  const [previousState, setPreviousState] = useState(null);
+
+  // Controla si el popup de confirmación de cierre de sesión está abierto
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  // Datos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dataState, setDataState] = useState({ students: [], restaurants: [], relations: [], administrators: [] });
@@ -58,10 +72,9 @@ function App() {
   const [localRelations, setLocalRelations] = useState(() => readJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, []));
   const [session, setSession] = useState(() => readJsonStorage(SESSION_STORAGE_KEY, null));
 
+  // Carga inicial de datos desde Firestore
   useEffect(() => {
     let mounted = true;
-
-    // La precarga pública no puede bloquear el acceso al login.
     (async () => {
       try {
         const data = await loadFirestoreData();
@@ -72,41 +85,28 @@ function App() {
         if (mounted) setLoading(false);
       }
     })();
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    writeJsonStorage(PENDING_USERS_STORAGE_KEY, pendingStudents);
-  }, [pendingStudents]);
+  // Sincronización con localStorage
+  useEffect(() => { writeJsonStorage(PENDING_USERS_STORAGE_KEY, pendingStudents); }, [pendingStudents]);
+  useEffect(() => { writeJsonStorage(APPROVED_USERS_STORAGE_KEY, approvedStudents); }, [approvedStudents]);
+  useEffect(() => { writeJsonStorage(LOCAL_RESTAURANTS_STORAGE_KEY, localRestaurants); }, [localRestaurants]);
+  useEffect(() => { writeJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, localRelations); }, [localRelations]);
+  useEffect(() => { writeJsonStorage(SESSION_STORAGE_KEY, session); }, [session]);
 
-  useEffect(() => {
-    writeJsonStorage(APPROVED_USERS_STORAGE_KEY, approvedStudents);
-  }, [approvedStudents]);
-
-  useEffect(() => {
-    writeJsonStorage(LOCAL_RESTAURANTS_STORAGE_KEY, localRestaurants);
-  }, [localRestaurants]);
-
-  useEffect(() => {
-    writeJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, localRelations);
-  }, [localRelations]);
-
-  useEffect(() => {
-    writeJsonStorage(SESSION_STORAGE_KEY, session);
-  }, [session]);
-
+  // Datos combinados (Firestore + local)
   const allStudents = useMemo(() => mergeById(dataState.students, approvedStudents), [dataState.students, approvedStudents]);
   const allRestaurants = useMemo(() => mergeById(dataState.restaurants, localRestaurants), [dataState.restaurants, localRestaurants]);
   const allRelations = useMemo(() => [...dataState.relations, ...localRelations], [dataState.relations, localRelations]);
 
+  // ViewModel con relaciones cruzadas alumno-restaurante
   const vm = useMemo(
     () => buildViewModel({ students: allStudents, restaurants: allRestaurants, relations: allRelations }),
     [allStudents, allRestaurants, allRelations]
   );
 
+  // Listas filtradas por búsqueda
   const filteredStudents = allStudents.filter((student) =>
     student.Name?.toLowerCase().includes(searchStudents.toLowerCase())
   );
@@ -114,6 +114,7 @@ function App() {
     restaurant.Name?.toLowerCase().includes(searchRestaurants.toLowerCase())
   );
 
+  // Elementos seleccionados actualmente
   const selectedStudent = selectedStudentId ? vm.studentById[selectedStudentId] : null;
   const selectedRestaurant = selectedRestaurantId ? vm.restaurantById[selectedRestaurantId] : null;
   const currentAdministrator = useMemo(
@@ -121,15 +122,23 @@ function App() {
     [session, dataState.administrators]
   );
 
+  // Perfil del usuario actual en sesión
   const mainProfile = useMemo(
     () => buildProfileFromSession(session, allStudents, dataState.administrators, pendingStudents),
     [session, allStudents, dataState.administrators, pendingStudents]
   );
 
+  // Catálogo de cuentas para autenticación
   const authCatalog = useMemo(
     () => buildAuthCatalog(allStudents, dataState.administrators, pendingStudents),
     [allStudents, dataState.administrators, pendingStudents]
   );
+
+  // Alumno en sesión (para edición de perfil propio)
+  const sessionStudent = useMemo(() => {
+    if (!session || session.source !== "student") return null;
+    return allStudents.find((s) => s.id === session.id || s.Email === session.email) || null;
+  }, [session, allStudents]);
 
   const isAuthSection = section === "auth";
   const isAdmin = session?.roleKey === ROLE_KEYS.ADMINISTRATOR;
@@ -142,7 +151,7 @@ function App() {
         section={section}
         onNavigate={handleSectionChange}
         onProfile={() => handleSectionChange("perfil")}
-        onLogout={handleLogout}
+        onLogout={() => setLogoutConfirmOpen(true)}
         isAuthenticated={Boolean(session)}
         isAdmin={isAdmin}
       />
@@ -156,6 +165,7 @@ function App() {
 
         {section === "inicio" && canRenderDataSection && <InicioPage />}
 
+        {/* Lista de alumnos */}
         {section === "alumnos" && canRenderDataSection && !selectedStudent && (
           <AlumnosPage
             search={searchStudents}
@@ -166,18 +176,26 @@ function App() {
           />
         )}
 
+        {/* Detalle de un alumno */}
         {section === "alumnos" && canRenderDataSection && selectedStudent && (
           <StudentDetailPage
             student={selectedStudent}
             jobs={vm.jobsByStudentId[selectedStudent.id] || []}
-            onBack={() => setSelectedStudentId(null)}
-            onOpenRestaurant={(restaurantId) => {
-              setSection("restaurantes");
-              setSelectedRestaurantId(restaurantId);
-            }}
+            onBack={handleBackFromStudentDetail}
+            backLabel={
+              previousState?.section === "restaurantes"
+                ? `← Volver al restaurante`
+                : "← Volver a alumnos"
+            }
+            onOpenRestaurant={handleOpenRestaurantFromStudent}
+            isAdmin={isAdmin}
+            sessionStudentId={session?.id}
+            onEditStudent={handleEditStudent}
+            onDeleteStudent={handleDeleteStudent}
           />
         )}
 
+        {/* Lista de restaurantes */}
         {section === "restaurantes" && canRenderDataSection && !selectedRestaurant && (
           <RestaurantesPage
             search={searchRestaurants}
@@ -189,16 +207,19 @@ function App() {
           />
         )}
 
+        {/* Detalle de un restaurante */}
         {section === "restaurantes" && canRenderDataSection && selectedRestaurant && (
           <RestaurantDetailPage
             restaurant={selectedRestaurant}
             jobs={vm.jobsByRestaurantId[selectedRestaurant.id] || []}
             studentSummaryById={vm.studentSummaryById}
-            onBack={() => setSelectedRestaurantId(null)}
-            onOpenStudent={(studentId) => {
-              setSection("alumnos");
-              setSelectedStudentId(studentId);
-            }}
+            onBack={handleBackFromRestaurantDetail}
+            backLabel={
+              previousState?.section === "alumnos"
+                ? `← Volver al alumno`
+                : "← Volver a restaurantes"
+            }
+            onOpenStudent={handleOpenStudentFromRestaurant}
           />
         )}
 
@@ -216,14 +237,18 @@ function App() {
           />
         )}
 
+        {/* Perfil del usuario (editable para alumnos) */}
         {section === "perfil" && (
           <ProfilePage
             profile={mainProfile}
             isAuthenticated={Boolean(session)}
             onGoToAuth={() => handleSectionChange("auth")}
+            sessionStudent={sessionStudent}
+            onUpdateProfile={handleUpdateProfile}
           />
         )}
 
+        {/* Panel admin: solicitudes pendientes */}
         {section === "admin-pendientes" && isAdmin && (
           <AdminPendingPage
             pendingStudents={pendingStudents}
@@ -233,6 +258,14 @@ function App() {
           />
         )}
 
+        {/* Panel admin: solicitudes aprobadas */}
+        {section === "admin-aprobados" && isAdmin && (
+          <AdminApprovedStudentsPage
+            approvedStudents={approvedStudents}
+          />
+        )}
+
+        {/* Panel admin: crear alumnos validados */}
         {section === "admin-crear-alumnos" && isAdmin && (
           <AdminCreateStudentPage
             restaurants={allRestaurants}
@@ -241,6 +274,7 @@ function App() {
           />
         )}
 
+        {/* Panel admin: crear restaurantes */}
         {section === "admin-crear-restaurantes" && isAdmin && (
           <AdminCreateRestaurantPage
             onCreateRestaurant={handleCreateRestaurant}
@@ -248,6 +282,7 @@ function App() {
           />
         )}
 
+        {/* Panel admin: herramientas y estadísticas */}
         {section === "admin-herramientas" && isAdmin && (
           <AdminManagementPage
             currentAdministrator={currentAdministrator}
@@ -256,9 +291,11 @@ function App() {
             approvedStudents={approvedStudents}
             totalStudents={allStudents.length}
             totalRestaurants={allRestaurants.length}
+            onNavigate={handleSectionChange}
           />
         )}
 
+        {/* Acceso denegado: zona admin sin sesión de admin */}
         {section.startsWith("admin-") && !isAdmin && (
           <section className="panel">
             <h2>Zona de administración</h2>
@@ -282,25 +319,95 @@ function App() {
           </section>
         )}
       </main>
+
+      {/* Popup de confirmación de cierre de sesión */}
+      {logoutConfirmOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-box">
+            <h3 className="modal-title">Cerrar sesión</h3>
+            <p className="modal-text">¿Seguro que quieres cerrar sesión?</p>
+            <div className="modal-actions">
+              <button className="primary-btn" onClick={handleConfirmLogout}>
+                Sí, cerrar sesión
+              </button>
+              <button className="small-btn" onClick={() => setLogoutConfirmOpen(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
+  // ─── NAVEGACIÓN ───────────────────────────────────────────────────────────
+
+  // Cambia de sección desde el menú, limpiando siempre el historial y las selecciones
   function handleSectionChange(nextSection) {
     setSection(nextSection);
     setSelectedStudentId(null);
     setSelectedRestaurantId(null);
+    setPreviousState(null);
     setAuthError("");
     setAuthInfo("");
     setAdminFeedback({ type: "", text: "" });
   }
 
-  function handleLogout() {
+  // Abre el detalle de un restaurante desde la ficha de un alumno
+  // Guarda el estado actual para poder volver con el botón "atrás"
+  function handleOpenRestaurantFromStudent(restaurantId) {
+    setPreviousState({ section: "alumnos", selectedStudentId, selectedRestaurantId: null });
+    setSection("restaurantes");
+    setSelectedRestaurantId(restaurantId);
+  }
+
+  // Abre el detalle de un alumno desde la ficha de un restaurante
+  // Guarda el estado actual para poder volver con el botón "atrás"
+  function handleOpenStudentFromRestaurant(studentId) {
+    setPreviousState({ section: "restaurantes", selectedStudentId: null, selectedRestaurantId });
+    setSection("alumnos");
+    setSelectedStudentId(studentId);
+  }
+
+  // Botón volver en el detalle de un alumno:
+  // si hay estado previo (venimos de un restaurante) restaura ese estado, si no vuelve al listado
+  function handleBackFromStudentDetail() {
+    if (previousState) {
+      setSection(previousState.section);
+      setSelectedStudentId(previousState.selectedStudentId);
+      setSelectedRestaurantId(previousState.selectedRestaurantId);
+      setPreviousState(null);
+    } else {
+      setSelectedStudentId(null);
+    }
+  }
+
+  // Botón volver en el detalle de un restaurante:
+  // si hay estado previo (venimos de un alumno) restaura ese estado, si no vuelve al listado
+  function handleBackFromRestaurantDetail() {
+    if (previousState) {
+      setSection(previousState.section);
+      setSelectedStudentId(previousState.selectedStudentId);
+      setSelectedRestaurantId(previousState.selectedRestaurantId);
+      setPreviousState(null);
+    } else {
+      setSelectedRestaurantId(null);
+    }
+  }
+
+  // ─── SESIÓN ───────────────────────────────────────────────────────────────
+
+  // Confirma y ejecuta el cierre de sesión tras el popup de confirmación
+  function handleConfirmLogout() {
+    setLogoutConfirmOpen(false);
     setSession(null);
     setAuthForm(EMPTY_AUTH_FORM);
     setAuthError("");
     setAuthInfo("Has salido de la sesión.");
     setSection("auth");
   }
+
+  // ─── AUTENTICACIÓN ────────────────────────────────────────────────────────
 
   function handleAuthModeChange(nextMode) {
     setAuthMode(nextMode);
@@ -329,7 +436,6 @@ function App() {
       } else {
         const nextPendingStudent = registerPendingStudent(authCatalog, authForm);
         setPendingStudents((current) => [...current, nextPendingStudent]);
-        // No iniciamos sesión automáticamente: la solicitud queda pendiente de revisión.
         setSession(null);
         setSection("inicio");
         setAdminFeedback({
@@ -337,7 +443,6 @@ function App() {
           text: "Solicitud enviada correctamente. Cuando un administrador te valide, podrás iniciar sesión."
         });
       }
-
       setAuthForm(EMPTY_AUTH_FORM);
     } catch (submitError) {
       setAuthError(submitError.message);
@@ -345,6 +450,8 @@ function App() {
       setAuthLoading(false);
     }
   }
+
+  // ─── ADMIN: SOLICITUDES PENDIENTES ────────────────────────────────────────
 
   async function handleApprovePendingStudent(studentId) {
     const studentToApprove = pendingStudents.find((student) => student.id === studentId);
@@ -388,6 +495,8 @@ function App() {
     setPendingStudents((currentPending) => currentPending.filter((student) => student.id !== studentId));
     setAdminFeedback({ type: "info", text: "Solicitud eliminada." });
   }
+
+  // ─── ADMIN: CREAR ALUMNO VALIDADO ─────────────────────────────────────────
 
   async function handleCreateValidatedStudent(studentPayload) {
     setPendingActionId("create-student");
@@ -453,6 +562,48 @@ function App() {
     }
   }
 
+  // ─── ADMIN: EDITAR FICHA DE ALUMNO ────────────────────────────────────────
+
+  // Actualiza los datos de un alumno existente en el estado local
+  function handleEditStudent(studentId, updatedData) {
+    setApprovedStudents((current) => {
+      const existingInApproved = current.find((s) => s.id === studentId);
+      if (existingInApproved) {
+        // Ya está en approvedStudents: actualizar directamente
+        return current.map((s) => (s.id === studentId ? { ...s, ...updatedData } : s));
+      }
+      // Viene de Firestore (dataState): añadir a approvedStudents con los datos actualizados
+      const original = allStudents.find((s) => s.id === studentId) || {};
+      return mergeById(current, [{ ...original, ...updatedData, id: studentId }]);
+    });
+    setAdminFeedback({ type: "info", text: "Ficha del alumno actualizada correctamente." });
+  }
+
+  // ─── ADMIN: ELIMINAR FICHA DE ALUMNO ─────────────────────────────────────
+
+  // Elimina un alumno del estado local (tanto de approvedStudents como de dataState)
+  function handleDeleteStudent(studentId) {
+    setApprovedStudents((current) => current.filter((s) => s.id !== studentId));
+    setDataState((current) => ({
+      ...current,
+      students: current.students.filter((s) => s.id !== studentId)
+    }));
+    // Volver al listado tras borrar la ficha
+    setSelectedStudentId(null);
+    setPreviousState(null);
+    setAdminFeedback({ type: "info", text: "Ficha de alumno eliminada." });
+  }
+
+  // ─── PERFIL: EDITAR DATOS PROPIOS ─────────────────────────────────────────
+
+  // El alumno actualiza su propia ficha (reutiliza handleEditStudent)
+  function handleUpdateProfile(updatedData) {
+    if (!sessionStudent) return;
+    handleEditStudent(sessionStudent.id, updatedData);
+  }
+
+  // ─── ADMIN: CREAR RESTAURANTE ─────────────────────────────────────────────
+
   async function handleCreateRestaurant(restaurantPayload) {
     setPendingActionId("create-restaurant");
     setAdminFeedback({ type: "", text: "" });
@@ -465,6 +616,7 @@ function App() {
         Address: restaurantPayload.address,
         Email: restaurantPayload.email,
         Phone: restaurantPayload.phone,
+        PhotoURL: restaurantPayload.photoUrl || "",
         Location: restaurantPayload.lat && restaurantPayload.lng
           ? { lat: Number(restaurantPayload.lat), lng: Number(restaurantPayload.lng) }
           : null
@@ -490,6 +642,7 @@ function App() {
         Address: restaurantPayload.address,
         Email: restaurantPayload.email,
         Phone: restaurantPayload.phone,
+        PhotoURL: restaurantPayload.photoUrl || "",
         Location: restaurantPayload.lat && restaurantPayload.lng
           ? { lat: Number(restaurantPayload.lat), lng: Number(restaurantPayload.lng) }
           : null
@@ -507,12 +660,15 @@ function App() {
   }
 }
 
+// ─── HELPERS DE PAYLOAD PARA FIRESTORE ────────────────────────────────────────
+
 function buildRestaurantFirestorePayload(restaurant) {
   return {
     Name: restaurant.Name || "",
     Address: restaurant.Address || "",
     Email: restaurant.Email || "",
     Phone: restaurant.Phone || "",
+    PhotoURL: restaurant.PhotoURL || "",
     Location: restaurant.Location || null
   };
 }
@@ -525,6 +681,7 @@ function buildStudentFirestorePayload(student) {
     Curso: student.Curso || "",
     LinkedIn: student.LinkedIn || "",
     Password: student.Password || "",
+    PhotoURL: student.PhotoURL || "",
     Status: student.Status || ROLE_KEYS.STUDENT,
     FirebaseAuthUid: student.FirebaseAuthUid || ""
   };
@@ -539,6 +696,9 @@ function buildRelationFirestorePayload(relation) {
   };
 }
 
+// ─── HELPERS DE PERFIL ────────────────────────────────────────────────────────
+
+// Construye el objeto de perfil a mostrar a partir de la sesión activa
 function buildProfileFromSession(session, students, administrators, pendingStudents) {
   if (!session) {
     return {
@@ -559,12 +719,14 @@ function buildProfileFromSession(session, students, administrators, pendingStude
     role: getProfileRoleLabel(session.roleKey),
     curso: currentUser?.Curso || "No definido",
     phone: currentUser?.Phone || "No definido",
+    linkedIn: currentUser?.LinkedIn || "",
     photo: session.roleKey === ROLE_KEYS.ADMINISTRATOR
       ? "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=60"
       : getStudentPhoto(currentUser)
   };
 }
 
+// Encuentra el usuario correspondiente a la sesión en las colecciones disponibles
 function findSessionUser(session, students, administrators, pendingStudents) {
   const collectionsBySource = {
     student: students,
@@ -575,6 +737,8 @@ function findSessionUser(session, students, administrators, pendingStudents) {
   const currentCollection = collectionsBySource[session?.source] || [];
   return currentCollection.find((item) => item.id === session?.id || item.Email === session?.email) || null;
 }
+
+// ─── HELPERS DE AUTENTICACIÓN ─────────────────────────────────────────────────
 
 function buildAuthCatalog(students, administrators, pendingStudents) {
   const remoteStudents = students.map((student) => ({
@@ -664,6 +828,9 @@ function registerPendingStudent(authCatalog, authForm) {
   };
 }
 
+// ─── HELPERS GENERALES ────────────────────────────────────────────────────────
+
+// Combina dos arrays por id, dando prioridad a los elementos de extraItems
 function mergeById(baseItems, extraItems) {
   const mergedById = new Map();
   [...baseItems, ...extraItems].forEach((item) => {
@@ -694,10 +861,9 @@ function writeJsonStorage(storageKey, value) {
       window.localStorage.removeItem(storageKey);
       return;
     }
-
     window.localStorage.setItem(storageKey, JSON.stringify(value));
   } catch (error) {
-    // Si el almacenamiento falla, la app sigue funcionando con el estado en memoria.
+    // Si el almacenamiento falla, la app sigue funcionando con el estado en memoria
   }
 }
 

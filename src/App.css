@@ -410,3 +410,209 @@ body {
   width: 1.1rem;
   height: 1.1rem;
 }
+
+/* ── Modales (popup de confirmación, edición, borrado) ──────────────────── */
+
+/* Fondo oscuro semitransparente que cubre toda la pantalla */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+/* Caja blanca del modal */
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Modal más ancho para formularios de edición */
+.modal-box-wide {
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.modal-text {
+  margin: 0;
+  color: #374151;
+}
+
+/* Fila de botones dentro del modal */
+.modal-actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+/* ── Confirmar borrado ───────────────────────────────────────────────────── */
+
+/* Frase que el usuario debe escribir para confirmar el borrado */
+.delete-confirm-phrase {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #991b1b;
+  margin: 0;
+  font-family: monospace;
+}
+
+/* Campo de texto donde se escribe la frase de confirmación */
+.delete-confirm-input {
+  width: 100%;
+  border: 2px solid #fca5a5;
+  border-radius: 10px;
+  padding: 0.7rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.delete-confirm-input:focus {
+  outline: none;
+  border-color: #ef4444;
+}
+
+/* Botón de borrado definitivo (rojo sólido) */
+.danger-btn-solid {
+  background: #b91c1c !important;
+  border-color: #7f1d1d !important;
+  color: #fff !important;
+}
+
+.danger-btn-solid:disabled {
+  background: #d1d5db !important;
+  border-color: #9ca3af !important;
+  color: #6b7280 !important;
+  cursor: not-allowed;
+}
+
+/* Botón de peligro (borde rojo, sin fondo) */
+.danger-btn {
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+.danger-btn:hover {
+  background: #fee2e2 !important;
+}
+
+/* ── Barra superior del detalle (volver + acciones admin) ────────────────── */
+
+.detail-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Grupo de botones de edición/borrado en el detalle */
+.detail-admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Tarjetas clicables del panel de administración ──────────────────────── */
+
+/* Tarjeta estadística clicable (estilos de botón sobre los de article) */
+.admin-stat-card-btn {
+  cursor: pointer;
+  border: 1px solid #d1d5db;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.admin-stat-card-btn:hover {
+  background: #f0f9ff;
+  border-color: #0ea5e9;
+}
+
+/* Número grande dentro de la tarjeta estadística */
+.admin-stat-number {
+  font-size: 2rem;
+  font-weight: 900;
+  margin: 0.1rem 0;
+  color: #111;
+}
+
+/* Texto de ayuda al pie de la tarjeta clicable */
+.admin-stat-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: auto;
+}
+
+/* ── Previsualización de foto ─────────────────────────────────────────────── */
+
+.photo-preview-wrap {
+  margin-bottom: 0.9rem;
+}
+
+.photo-preview-img {
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid #d1d5db;
+}
+
+/* ── Mapa sin coordenadas ─────────────────────────────────────────────────── */
+
+.map-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* ── Cabecera del perfil con botón de edición ────────────────────────────── */
+
+.profile-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.profile-header-row h2 {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .modal-box {
+    padding: 1.1rem;
+  }
+
+  .detail-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-stat-number {
+    font-size: 1.6rem;
+  }
+}

@@ -6,38 +6,77 @@ export default function AdminManagementPage({
   pendingStudents,
   approvedStudents,
   totalStudents,
-  totalRestaurants
+  totalRestaurants,
+  onNavigate
 }) {
   return (
     <section className="panel">
       <h2>Administradores</h2>
       <p className="section-helper-text">
-        Resumen rápido de la administración, accesos pendientes y responsables activos.
+        Resumen rápido de la administración. Haz clic en cualquier recuadro para acceder a esa sección.
       </p>
 
+      {/* Tarjetas de estadísticas — las clicables navegan a su sección */}
       <div className="card-grid admin-stats-grid">
+
+        {/* Administrador actual (informativo, sin navegación) */}
         <article className="panel admin-stat-card">
           <strong>Administrador actual</strong>
           <p>{currentAdministrator?.Name || currentAdministrator?.Email || "Sin identificar"}</p>
         </article>
-        <article className="panel admin-stat-card">
+
+        {/* Solicitudes pendientes → va a la página de pendientes */}
+        <button
+          type="button"
+          className="panel admin-stat-card admin-stat-card-btn"
+          onClick={() => onNavigate("admin-pendientes")}
+          title="Ver solicitudes pendientes"
+        >
           <strong>Solicitudes pendientes</strong>
-          <p>{pendingStudents.length}</p>
-        </article>
-        <article className="panel admin-stat-card">
-          <strong>Altas aprobadas localmente</strong>
-          <p>{approvedStudents.length}</p>
-        </article>
-        <article className="panel admin-stat-card">
+          <p className="admin-stat-number">{pendingStudents.length}</p>
+          <span className="admin-stat-hint">Ver solicitudes →</span>
+        </button>
+
+        {/* Altas aprobadas → va a la página de aprobados */}
+        <button
+          type="button"
+          className="panel admin-stat-card admin-stat-card-btn"
+          onClick={() => onNavigate("admin-aprobados")}
+          title="Ver solicitudes aprobadas"
+        >
+          <strong>Altas aprobadas</strong>
+          <p className="admin-stat-number">{approvedStudents.length}</p>
+          <span className="admin-stat-hint">Ver aprobados →</span>
+        </button>
+
+        {/* Total de alumnos → va al listado de alumnos */}
+        <button
+          type="button"
+          className="panel admin-stat-card admin-stat-card-btn"
+          onClick={() => onNavigate("alumnos")}
+          title="Ir a alumnos"
+        >
           <strong>Alumnos visibles</strong>
-          <p>{totalStudents}</p>
-        </article>
-        <article className="panel admin-stat-card">
+          <p className="admin-stat-number">{totalStudents}</p>
+          <span className="admin-stat-hint">Ver alumnos →</span>
+        </button>
+
+        {/* Total de restaurantes → va al listado de restaurantes */}
+        <button
+          type="button"
+          className="panel admin-stat-card admin-stat-card-btn"
+          onClick={() => onNavigate("restaurantes")}
+          title="Ir a restaurantes"
+        >
           <strong>Restaurantes</strong>
-          <p>{totalRestaurants}</p>
-        </article>
+          <p className="admin-stat-number">{totalRestaurants}</p>
+          <span className="admin-stat-hint">Ver restaurantes →</span>
+        </button>
+
       </div>
 
+      {/* Lista de administradores registrados */}
+      <h3>Administradores registrados</h3>
       <div className="spaced-list">
         {administrators.map((administrator) => (
           <article key={administrator.id} className="admin-review-card compact-admin-card">

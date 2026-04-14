@@ -2,10 +2,11 @@ import React from "react";
 import LeafletRestaurantMap from "../components/LeafletRestaurantMap";
 import { getRestaurantPhoto, getStudentPhoto } from "../utils/ui";
 
-export default function RestaurantDetailPage({ restaurant, jobs, studentSummaryById, onBack, onOpenStudent }) {
+export default function RestaurantDetailPage({ restaurant, jobs, studentSummaryById, onBack, backLabel, onOpenStudent }) {
   return (
     <section className="panel">
-      <button className="small-btn" onClick={onBack}>← Volver a restaurantes</button>
+      {/* El botón de volver muestra un texto dinámico según de dónde venimos */}
+      <button className="small-btn" onClick={onBack}>{backLabel || "← Volver a restaurantes"}</button>
 
       <div className="restaurant-detail-top">
         <div className="restaurant-detail-head">

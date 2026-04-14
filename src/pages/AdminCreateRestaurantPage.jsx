@@ -5,6 +5,7 @@ const EMPTY_FORM = {
   address: "",
   email: "",
   phone: "",
+  photoUrl: "",
   lat: "",
   lng: ""
 };
@@ -47,6 +48,29 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
             <input value={form.phone} onChange={(event) => updateField(setForm, "phone", event.target.value)} />
           </label>
         </div>
+
+        {/* Campo para la URL de la foto del restaurante */}
+        <label className="auth-field">
+          <span>URL de foto del restaurante <small className="optional-label">(opcional)</small></span>
+          <input
+            type="url"
+            placeholder="https://ejemplo.com/foto-restaurante.jpg"
+            value={form.photoUrl}
+            onChange={(event) => updateField(setForm, "photoUrl", event.target.value)}
+          />
+        </label>
+
+        {/* Previsualización de la foto si hay URL */}
+        {form.photoUrl && (
+          <div className="photo-preview-wrap">
+            <img
+              src={form.photoUrl}
+              alt="Previsualización"
+              className="photo-preview-img"
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+          </div>
+        )}
 
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
