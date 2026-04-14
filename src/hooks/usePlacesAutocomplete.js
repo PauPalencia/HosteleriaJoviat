@@ -1,16 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
-// Clave de la API de Google Maps (se lee del archivo .env)
+// Clave de la API de Google Maps leída del archivo .env
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
-// Carga el script de Google Maps una sola vez (evita cargas duplicadas)
+// Carga el script de Google Maps una sola vez aunque el hook se monte varias veces
 function loadGoogleMapsScript() {
-  // Si ya está cargado, no hacer nada
-  if (window.google?.maps?.places) {
-    return Promise.resolve();
-  }
+  if (window.google?.maps?.places) return Promise.resolve();
 
-  // Si el script ya existe en el DOM (está cargando), esperar a que termine
   const existingScript = document.getElementById("google-maps-places-script");
   if (existingScript) {
     return new Promise((resolve, reject) => {
@@ -19,7 +15,6 @@ function loadGoogleMapsScript() {
     });
   }
 
-  // Crear e insertar el script de Google Maps con la librería places
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.id = "google-maps-places-script";
@@ -33,62 +28,142 @@ function loadGoogleMapsScript() {
 }
 
 /**
- * Hook que conecta un input de texto con Google Places Autocomplete.
+ * Hook para autocompletar lugares usando la API de Google Places.
  *
- * @param {React.RefObject} inputRef - Ref del elemento <input> donde se escribe la búsqueda
- * @param {Function} onPlaceSelected - Callback llamado con { name, address, phone, lat, lng }
- *                                     cuando el usuario selecciona un lugar de la lista
+ * En vez de usar el widget nativo (Autocomplete), usa AutocompleteService
+ * para obtener predicciones mientras el usuario escribe, y PlacesService
+ * para obtener los detalles del lugar seleccionado. Esto nos da control
+ * total sobre el UI (dropdown personalizado, estilos, etc.).
+ *
+ * @param {Function} onPlaceSelected - Callback con { name, address, phone, lat, lng }
+ * @returns {{ query, predictions, loading, ready, handleSearch, selectPrediction, clearPredictions }}
  */
-export function usePlacesAutocomplete(inputRef, onPlaceSelected) {
-  // Guardamos la referencia del autocomplete para poder limpiarla al desmontar
-  const autocompleteRef = useRef(null);
+export function usePlacesAutocomplete(onPlaceSelected) {
+  // Texto actual del input de búsqueda
+  const [query, setQuery] = useState("");
+  // Lista de predicciones devueltas por Google
+  const [predictions, setPredictions] = useState([]);
+  // Indica si hay una petición en vuelo
+  const [loading, setLoading] = useState(false);
+  // Indica si la API de Google ya está lista para usar
+  const [ready, setReady] = useState(false);
 
+  // Referencias a los servicios de Google (no cambian entre renders)
+  const autocompleteServiceRef = useRef(null);
+  const placesServiceRef = useRef(null);
+  // Token de sesión: agrupa búsqueda + selección en una sola sesión para la facturación
+  const sessionTokenRef = useRef(null);
+  // Referencia al temporizador del debounce
+  const debounceRef = useRef(null);
+
+  // Cargar el script de Google Maps al montar el hook
   useEffect(() => {
-    // Si no hay API key o el input no está montado, no inicializar
-    if (!GOOGLE_MAPS_API_KEY || !inputRef.current) return;
-
-    let cancelled = false;
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.warn("REACT_APP_GOOGLE_MAPS_API_KEY no está definida en .env");
+      return;
+    }
 
     loadGoogleMapsScript()
       .then(() => {
-        if (cancelled || !inputRef.current) return;
+        // Inicializar AutocompleteService (para las predicciones de texto)
+        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
 
-        // Inicializar el autocomplete sobre el input recibido
-        // types: "establishment" para que sugiera negocios (restaurantes, hoteles, etc.)
-        // fields: solo pedimos los campos que necesitamos para no sobrecargar la API
-        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          types: ["establishment"],
-          fields: ["name", "formatted_address", "formatted_phone_number", "geometry"]
-        });
+        // PlacesService necesita un elemento DOM (no lo mostramos, es solo un ancla)
+        const dummyDiv = document.createElement("div");
+        placesServiceRef.current = new window.google.maps.places.PlacesService(dummyDiv);
 
-        autocompleteRef.current = autocomplete;
+        // Crear token de sesión inicial
+        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
 
-        // Cuando el usuario selecciona un lugar de la lista desplegable
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (!place || !place.geometry) return;
+        setReady(true);
+      })
+      .catch((err) => {
+        console.error("Error al cargar Google Maps Places:", err);
+      });
+  }, []);
 
-          // Extraer y pasar los datos del lugar al formulario padre
+  /**
+   * Llamar cada vez que el usuario escribe en el input.
+   * Hace debounce de 300ms antes de llamar a la API para no sobrecargarla.
+   */
+  const handleSearch = useCallback((value) => {
+    setQuery(value);
+
+    // Cancelar la petición anterior si el usuario sigue escribiendo
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!value.trim() || !ready || !autocompleteServiceRef.current) {
+      setPredictions([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    debounceRef.current = setTimeout(() => {
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
+          input: value,
+          types: ["establishment"], // solo negocios
+          sessionToken: sessionTokenRef.current
+        },
+        (results, status) => {
+          setLoading(false);
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+            setPredictions(results);
+          } else {
+            setPredictions([]);
+          }
+        }
+      );
+    }, 300);
+  }, [ready]);
+
+  /**
+   * Llamar cuando el usuario hace clic en una predicción del dropdown.
+   * Obtiene los detalles completos del lugar y llama a onPlaceSelected.
+   */
+  const selectPrediction = useCallback((prediction) => {
+    if (!placesServiceRef.current) return;
+
+    // Limpiar el dropdown de inmediato (UX responsiva)
+    setPredictions([]);
+    setQuery(prediction.structured_formatting?.main_text || prediction.description);
+
+    placesServiceRef.current.getDetails(
+      {
+        placeId: prediction.place_id,
+        fields: ["name", "formatted_address", "formatted_phone_number", "geometry"],
+        sessionToken: sessionTokenRef.current
+      },
+      (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
           onPlaceSelected({
             name: place.name || "",
             address: place.formatted_address || "",
             phone: place.formatted_phone_number || "",
-            lat: place.geometry.location.lat().toString(),
-            lng: place.geometry.location.lng().toString()
+            lat: place.geometry?.location.lat().toString() || "",
+            lng: place.geometry?.location.lng().toString() || ""
           });
-        });
-      })
-      .catch((err) => {
-        console.error("Error al cargar Google Maps:", err);
-      });
+        }
 
-    return () => {
-      cancelled = true;
-      // Limpiar el listener al desmontar el componente
-      if (autocompleteRef.current && window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        // Renovar el token de sesión tras cada selección (buena práctica de facturación)
+        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
       }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    );
+  }, [onPlaceSelected]);
+
+  // Limpiar el dropdown (p. ej. al hacer clic fuera)
+  const clearPredictions = useCallback(() => {
+    setPredictions([]);
   }, []);
+
+  // Limpiar el debounce al desmontar para evitar memory leaks
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  return { query, predictions, loading, ready, handleSearch, selectPrediction, clearPredictions };
 }
