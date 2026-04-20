@@ -33,6 +33,8 @@ const PENDING_USERS_STORAGE_KEY = "hosteleria-joviat-pending-users";
 const APPROVED_USERS_STORAGE_KEY = "hosteleria-joviat-approved-users";
 const LOCAL_RESTAURANTS_STORAGE_KEY = "hosteleria-joviat-local-restaurants";
 const LOCAL_RELATIONS_STORAGE_KEY = "hosteleria-joviat-local-relations";
+// Clave para guardar el override de perfil del administrador (nombre y foto personalizados)
+const ADMIN_PROFILE_STORAGE_KEY = "hosteleria-joviat-admin-profile";
 
 function App() {
   const isMobile = useIsMobile(900);
@@ -71,6 +73,8 @@ function App() {
   const [localRestaurants, setLocalRestaurants] = useState(() => readJsonStorage(LOCAL_RESTAURANTS_STORAGE_KEY, []));
   const [localRelations, setLocalRelations] = useState(() => readJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, []));
   const [session, setSession] = useState(() => readJsonStorage(SESSION_STORAGE_KEY, null));
+  // Personalización del perfil del administrador (nombre y foto) guardada en localStorage
+  const [adminProfileOverride, setAdminProfileOverride] = useState(() => readJsonStorage(ADMIN_PROFILE_STORAGE_KEY, null));
 
   // Carga inicial de datos desde Firestore
   useEffect(() => {
@@ -94,6 +98,7 @@ function App() {
   useEffect(() => { writeJsonStorage(LOCAL_RESTAURANTS_STORAGE_KEY, localRestaurants); }, [localRestaurants]);
   useEffect(() => { writeJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, localRelations); }, [localRelations]);
   useEffect(() => { writeJsonStorage(SESSION_STORAGE_KEY, session); }, [session]);
+  useEffect(() => { writeJsonStorage(ADMIN_PROFILE_STORAGE_KEY, adminProfileOverride); }, [adminProfileOverride]);
 
   // Datos combinados (Firestore + local)
   const allStudents = useMemo(() => mergeById(dataState.students, approvedStudents), [dataState.students, approvedStudents]);
@@ -122,11 +127,21 @@ function App() {
     [session, dataState.administrators]
   );
 
-  // Perfil del usuario actual en sesión
-  const mainProfile = useMemo(
-    () => buildProfileFromSession(session, allStudents, dataState.administrators, pendingStudents),
-    [session, allStudents, dataState.administrators, pendingStudents]
-  );
+  // Perfil del usuario actual en sesión.
+  // Para administradores, mezcla el override local (nombre y foto personalizados)
+  // por encima de los datos base de Firestore.
+  const mainProfile = useMemo(() => {
+    const base = buildProfileFromSession(session, allStudents, dataState.administrators, pendingStudents);
+    const isAdminSession = session?.roleKey === ROLE_KEYS.ADMINISTRATOR;
+    if (isAdminSession && adminProfileOverride) {
+      return {
+        ...base,
+        name: adminProfileOverride.Name || base.name,
+        photo: adminProfileOverride.PhotoURL || base.photo
+      };
+    }
+    return base;
+  }, [session, allStudents, dataState.administrators, pendingStudents, adminProfileOverride]);
 
   // Catálogo de cuentas para autenticación
   const authCatalog = useMemo(
@@ -275,11 +290,12 @@ function App() {
           />
         )}
 
-        {/* Perfil del usuario (editable para alumnos) */}
+        {/* Perfil del usuario (editable para alumnos y admins) */}
         {section === "perfil" && (
           <ProfilePage
             profile={mainProfile}
             isAuthenticated={Boolean(session)}
+            isAdmin={isAdmin}
             sessionIsStudent={sessionIsStudent}
             onGoToAuth={() => handleSectionChange("auth")}
             sessionStudent={sessionStudent}
@@ -637,10 +653,15 @@ function App() {
 
   // ─── PERFIL: EDITAR DATOS PROPIOS ─────────────────────────────────────────
 
-  // El alumno actualiza su propia ficha (reutiliza handleEditStudent)
+  // Actualiza el perfil del usuario en sesión:
+  //  - Si es administrador: guarda un override local con nombre y foto
+  //  - Si es alumno: actualiza su ficha en el estado de alumnos
   function handleUpdateProfile(updatedData) {
-    if (!sessionStudent) return;
-    handleEditStudent(sessionStudent.id, updatedData);
+    if (isAdmin) {
+      setAdminProfileOverride({ Name: updatedData.Name, PhotoURL: updatedData.PhotoURL });
+    } else if (sessionStudent) {
+      handleEditStudent(sessionStudent.id, updatedData);
+    }
   }
 
   // ─── ADMIN: CREAR RESTAURANTE ─────────────────────────────────────────────

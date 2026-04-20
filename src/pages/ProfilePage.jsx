@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 
-export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent, onGoToAuth, sessionStudent, onUpdateProfile }) {
+export default function ProfilePage({
+  profile,
+  isAuthenticated,
+  isAdmin,
+  sessionIsStudent,
+  onGoToAuth,
+  sessionStudent,
+  onUpdateProfile
+}) {
   // Controla si se muestra el formulario de edición
   const [editOpen, setEditOpen] = useState(false);
   // Datos del formulario de edición (se inicializan al abrir)
@@ -14,27 +22,25 @@ export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent
   // Feedback tras guardar
   const [saved, setSaved] = useState(false);
 
-  // Puede editar si es alumno autenticado.
-  // Usamos sessionIsStudent como fallback por si sessionStudent tarda en resolverse
-  // (diferencias de mayúsculas en email u otras causas de mismatch temporal)
-  const canEdit = isAuthenticated && (sessionStudent || sessionIsStudent);
+  // Cualquier usuario autenticado puede editar su perfil.
+  // - Alumnos: editan todos los campos de su ficha (Name, Phone, Curso, LinkedIn, Photo)
+  // - Administradores: editan nombre y foto solamente
+  const canEdit = isAuthenticated && (isAdmin || sessionStudent || sessionIsStudent);
 
   // Abre el formulario de edición cargando los datos actuales del perfil
-  // Usa sessionStudent si está disponible; si no, usa los datos del profile general
   function handleOpenEdit() {
     setEditForm({
       Name: sessionStudent?.Name || profile.name || "",
       Phone: sessionStudent?.Phone || profile.phone || "",
       Curso: sessionStudent?.Curso || profile.curso || "",
       LinkedIn: sessionStudent?.LinkedIn || profile.linkedIn || "",
-      PhotoURL: sessionStudent?.PhotoURL || ""
+      PhotoURL: sessionStudent?.PhotoURL || profile.photo || ""
     });
     setSaved(false);
     setEditOpen(true);
   }
 
   // Guarda los cambios y cierra el formulario
-  // El nombre no puede quedar vacío: usa el actual como fallback
   function handleSave(event) {
     event.preventDefault();
     onUpdateProfile({
@@ -71,7 +77,7 @@ export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent
         <h2>Mi perfil</h2>
         {canEdit && (
           <button className="small-btn" onClick={handleOpenEdit}>
-            ✏️ Editar mi ficha
+            ✏️ Editar mi perfil
           </button>
         )}
       </div>
@@ -88,21 +94,29 @@ export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent
           <p><strong>Nombre:</strong> {profile.name}</p>
           <p><strong>Email:</strong> {profile.email}</p>
           <p><strong>Estado:</strong> {profile.role}</p>
-          <p><strong>Curso:</strong> {profile.curso}</p>
-          <p><strong>Teléfono:</strong> {profile.phone}</p>
+          {/* Los campos de alumno solo se muestran si no es admin */}
+          {!isAdmin && (
+            <>
+              <p><strong>Curso:</strong> {profile.curso}</p>
+              <p><strong>Teléfono:</strong> {profile.phone}</p>
+            </>
+          )}
           {profile.linkedIn && (
             <p><strong>LinkedIn:</strong> {profile.linkedIn}</p>
           )}
         </div>
       </div>
 
-      {/* ── Modal de edición de perfil propio ─────────────────────────────── */}
+      {/* ── Modal de edición de perfil ──────────────────────────────────────── */}
       {editOpen && (
         <div className="modal-backdrop">
           <div className="modal-box modal-box-wide">
-            <h3 className="modal-title">Editar mi ficha</h3>
+            <h3 className="modal-title">
+              {isAdmin ? "Editar perfil de administrador" : "Editar mi ficha"}
+            </h3>
             <form className="auth-form clean-auth-form" onSubmit={handleSave}>
 
+              {/* Nombre: visible para todos */}
               <label className="auth-field">
                 <span>Nombre completo</span>
                 <input
@@ -111,33 +125,39 @@ export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent
                 />
               </label>
 
-              <div className="auth-form-grid compact-grid">
-                <label className="auth-field">
-                  <span>Teléfono</span>
-                  <input
-                    value={editForm.Phone}
-                    onChange={(e) => setEditForm((f) => ({ ...f, Phone: e.target.value }))}
-                  />
-                </label>
-                <label className="auth-field">
-                  <span>Curso</span>
-                  <input
-                    value={editForm.Curso}
-                    onChange={(e) => setEditForm((f) => ({ ...f, Curso: e.target.value }))}
-                  />
-                </label>
-              </div>
+              {/* Campos exclusivos de alumno */}
+              {!isAdmin && (
+                <>
+                  <div className="auth-form-grid compact-grid">
+                    <label className="auth-field">
+                      <span>Teléfono</span>
+                      <input
+                        value={editForm.Phone}
+                        onChange={(e) => setEditForm((f) => ({ ...f, Phone: e.target.value }))}
+                      />
+                    </label>
+                    <label className="auth-field">
+                      <span>Curso</span>
+                      <input
+                        value={editForm.Curso}
+                        onChange={(e) => setEditForm((f) => ({ ...f, Curso: e.target.value }))}
+                      />
+                    </label>
+                  </div>
 
-              <label className="auth-field">
-                <span>LinkedIn</span>
-                <input
-                  value={editForm.LinkedIn}
-                  onChange={(e) => setEditForm((f) => ({ ...f, LinkedIn: e.target.value }))}
-                />
-              </label>
+                  <label className="auth-field">
+                    <span>LinkedIn</span>
+                    <input
+                      value={editForm.LinkedIn}
+                      onChange={(e) => setEditForm((f) => ({ ...f, LinkedIn: e.target.value }))}
+                    />
+                  </label>
+                </>
+              )}
 
+              {/* URL de foto de perfil: visible para todos */}
               <label className="auth-field">
-                <span>URL de foto de perfil</span>
+                <span>URL de foto de perfil <small className="optional-label">(opcional)</small></span>
                 <input
                   type="url"
                   placeholder="https://ejemplo.com/foto.jpg"
@@ -160,7 +180,9 @@ export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent
 
               <div className="modal-actions">
                 <button type="submit" className="primary-btn">Guardar cambios</button>
-                <button type="button" className="small-btn" onClick={() => setEditOpen(false)}>Cancelar</button>
+                <button type="button" className="small-btn" onClick={() => setEditOpen(false)}>
+                  Cancelar
+                </button>
               </div>
             </form>
           </div>
