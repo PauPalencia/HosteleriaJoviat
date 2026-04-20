@@ -192,7 +192,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         {/* Coordenadas (se rellenan automáticamente desde Google Places) */}
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Latitud <small className="optional-label">(autocompletado)</small></span>
+            <span>Latitud <strong>*</strong></span>
             <input
               value={form.lat}
               onChange={(e) => updateField(setForm, "lat", e.target.value)}
@@ -200,7 +200,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
             />
           </label>
           <label className="auth-field">
-            <span>Longitud <small className="optional-label">(autocompletado)</small></span>
+            <span>Longitud <strong>*</strong></span>
             <input
               value={form.lng}
               onChange={(e) => updateField(setForm, "lng", e.target.value)}
