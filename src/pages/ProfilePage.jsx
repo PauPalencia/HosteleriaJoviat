@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function ProfilePage({ profile, isAuthenticated, onGoToAuth, sessionStudent, onUpdateProfile }) {
+export default function ProfilePage({ profile, isAuthenticated, sessionIsStudent, onGoToAuth, sessionStudent, onUpdateProfile }) {
   // Controla si se muestra el formulario de edición
   const [editOpen, setEditOpen] = useState(false);
   // Datos del formulario de edición (se inicializan al abrir)
@@ -14,10 +14,13 @@ export default function ProfilePage({ profile, isAuthenticated, onGoToAuth, sess
   // Feedback tras guardar
   const [saved, setSaved] = useState(false);
 
-  // Solo los alumnos con cuenta pueden editar su perfil
-  const canEdit = isAuthenticated && sessionStudent;
+  // Puede editar si es alumno autenticado.
+  // Usamos sessionIsStudent como fallback por si sessionStudent tarda en resolverse
+  // (diferencias de mayúsculas en email u otras causas de mismatch temporal)
+  const canEdit = isAuthenticated && (sessionStudent || sessionIsStudent);
 
-  // Abre el formulario de edición con los datos actuales
+  // Abre el formulario de edición cargando los datos actuales del perfil
+  // Usa sessionStudent si está disponible; si no, usa los datos del profile general
   function handleOpenEdit() {
     setEditForm({
       Name: sessionStudent?.Name || profile.name || "",
@@ -31,10 +34,11 @@ export default function ProfilePage({ profile, isAuthenticated, onGoToAuth, sess
   }
 
   // Guarda los cambios y cierra el formulario
+  // El nombre no puede quedar vacío: usa el actual como fallback
   function handleSave(event) {
     event.preventDefault();
     onUpdateProfile({
-      Name: editForm.Name.trim() || sessionStudent.Name,
+      Name: editForm.Name.trim() || sessionStudent?.Name || profile.name,
       Phone: editForm.Phone.trim(),
       Curso: editForm.Curso.trim(),
       LinkedIn: editForm.LinkedIn.trim(),

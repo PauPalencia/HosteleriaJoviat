@@ -135,10 +135,19 @@ function App() {
   );
 
   // Alumno en sesión (para edición de perfil propio)
+  // La comparación de email es case-insensitive para evitar que diferencias de
+  // mayúsculas en Firestore impidan encontrar al alumno correctamente
   const sessionStudent = useMemo(() => {
     if (!session || session.source !== "student") return null;
-    return allStudents.find((s) => s.id === session.id || s.Email === session.email) || null;
+    const emailLower = (session.email || "").toLowerCase();
+    return allStudents.find(
+      (s) => s.id === session.id || (s.Email || "").toLowerCase() === emailLower
+    ) || null;
   }, [session, allStudents]);
+
+  // True cuando la sesión activa es de un alumno (independientemente de si
+  // se encontraron sus datos completos en allStudents)
+  const sessionIsStudent = session?.source === "student";
 
   const isAuthSection = section === "auth";
   const isAdmin = session?.roleKey === ROLE_KEYS.ADMINISTRATOR;
@@ -271,6 +280,7 @@ function App() {
           <ProfilePage
             profile={mainProfile}
             isAuthenticated={Boolean(session)}
+            sessionIsStudent={sessionIsStudent}
             onGoToAuth={() => handleSectionChange("auth")}
             sessionStudent={sessionStudent}
             onUpdateProfile={handleUpdateProfile}
