@@ -879,3 +879,24 @@ body {
   font-size: 0.8rem;
   color: #6b7280;
 }
+
+/* ── Icono de clúster del mapa de restaurantes ───────────────────────────── */
+
+/* Burbuja circular azul con el número de restaurantes agrupados */
+.map-cluster-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.45);
+  font-family: "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+  transition: transform 0.1s;
+}

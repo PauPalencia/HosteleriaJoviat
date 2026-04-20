@@ -165,8 +165,22 @@ function App() {
 
         {section === "inicio" && canRenderDataSection && <InicioPage />}
 
-        {/* Lista de alumnos */}
-        {section === "alumnos" && canRenderDataSection && !selectedStudent && (
+        {/* ── Sección: Alumnos ─────────────────────────────────────────────────── */}
+
+        {/* Acceso denegado si no hay sesión */}
+        {section === "alumnos" && canRenderDataSection && !session && (
+          <section className="panel">
+            <div className="profile-logo">JOVIAT</div>
+            <h2>Acceso restringido</h2>
+            <p>Debes iniciar sesión para ver la lista de alumnos.</p>
+            <button type="button" className="primary-btn" onClick={() => handleSectionChange("auth")}>
+              Ir a login / registro
+            </button>
+          </section>
+        )}
+
+        {/* Lista de alumnos (solo si hay sesión) */}
+        {section === "alumnos" && canRenderDataSection && session && !selectedStudent && (
           <AlumnosPage
             search={searchStudents}
             onSearch={setSearchStudents}
@@ -176,8 +190,8 @@ function App() {
           />
         )}
 
-        {/* Detalle de un alumno */}
-        {section === "alumnos" && canRenderDataSection && selectedStudent && (
+        {/* Detalle de un alumno (solo si hay sesión) */}
+        {section === "alumnos" && canRenderDataSection && session && selectedStudent && (
           <StudentDetailPage
             student={selectedStudent}
             jobs={vm.jobsByStudentId[selectedStudent.id] || []}
@@ -195,20 +209,35 @@ function App() {
           />
         )}
 
-        {/* Lista de restaurantes */}
-        {section === "restaurantes" && canRenderDataSection && !selectedRestaurant && (
+        {/* ── Sección: Restaurantes ─────────────────────────────────────────── */}
+
+        {/* Acceso denegado si no hay sesión */}
+        {section === "restaurantes" && canRenderDataSection && !session && (
+          <section className="panel">
+            <div className="profile-logo">JOVIAT</div>
+            <h2>Acceso restringido</h2>
+            <p>Debes iniciar sesión para ver la lista de restaurantes.</p>
+            <button type="button" className="primary-btn" onClick={() => handleSectionChange("auth")}>
+              Ir a login / registro
+            </button>
+          </section>
+        )}
+
+        {/* Lista de restaurantes (solo si hay sesión) */}
+        {section === "restaurantes" && canRenderDataSection && session && !selectedRestaurant && (
           <RestaurantesPage
             search={searchRestaurants}
             onSearch={setSearchRestaurants}
             restaurants={filteredRestaurants}
             associatesByRestaurantId={vm.restaurantAssociatesById}
+            jobsByRestaurantId={vm.jobsByRestaurantId}
             isMobile={isMobile}
             onOpenRestaurant={setSelectedRestaurantId}
           />
         )}
 
-        {/* Detalle de un restaurante */}
-        {section === "restaurantes" && canRenderDataSection && selectedRestaurant && (
+        {/* Detalle de un restaurante (solo si hay sesión) */}
+        {section === "restaurantes" && canRenderDataSection && session && selectedRestaurant && (
           <RestaurantDetailPage
             restaurant={selectedRestaurant}
             jobs={vm.jobsByRestaurantId[selectedRestaurant.id] || []}
