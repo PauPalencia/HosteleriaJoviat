@@ -35,6 +35,8 @@ const LOCAL_RESTAURANTS_STORAGE_KEY = "hosteleria-joviat-local-restaurants";
 const LOCAL_RELATIONS_STORAGE_KEY = "hosteleria-joviat-local-relations";
 // Clave para guardar el override de perfil del administrador (nombre y foto personalizados)
 const ADMIN_PROFILE_STORAGE_KEY = "hosteleria-joviat-admin-profile";
+// Clave para guardar las solicitudes de alta de restaurante enviadas por alumnos
+const RESTAURANT_REQUESTS_STORAGE_KEY = "hosteleria-joviat-restaurant-requests";
 
 function App() {
   const isMobile = useIsMobile(900);
@@ -75,6 +77,9 @@ function App() {
   const [session, setSession] = useState(() => readJsonStorage(SESSION_STORAGE_KEY, null));
   // Personalización del perfil del administrador (nombre y foto) guardada en localStorage
   const [adminProfileOverride, setAdminProfileOverride] = useState(() => readJsonStorage(ADMIN_PROFILE_STORAGE_KEY, null));
+  // Solicitudes de alta de restaurante enviadas por alumnos.
+  // Cada solicitud: { id, studentId, studentName, studentEmail, description, createdAt, approved }
+  const [restaurantRequests, setRestaurantRequests] = useState(() => readJsonStorage(RESTAURANT_REQUESTS_STORAGE_KEY, []));
 
   // Carga inicial de datos desde Firestore
   useEffect(() => {
@@ -99,6 +104,7 @@ function App() {
   useEffect(() => { writeJsonStorage(LOCAL_RELATIONS_STORAGE_KEY, localRelations); }, [localRelations]);
   useEffect(() => { writeJsonStorage(SESSION_STORAGE_KEY, session); }, [session]);
   useEffect(() => { writeJsonStorage(ADMIN_PROFILE_STORAGE_KEY, adminProfileOverride); }, [adminProfileOverride]);
+  useEffect(() => { writeJsonStorage(RESTAURANT_REQUESTS_STORAGE_KEY, restaurantRequests); }, [restaurantRequests]);
 
   // Datos combinados (Firestore + local)
   const allStudents = useMemo(() => mergeById(dataState.students, approvedStudents), [dataState.students, approvedStudents]);
@@ -300,6 +306,10 @@ function App() {
             onGoToAuth={() => handleSectionChange("auth")}
             sessionStudent={sessionStudent}
             onUpdateProfile={handleUpdateProfile}
+            allRestaurants={allRestaurants}
+            studentJobs={sessionStudent ? (vm.jobsByStudentId[sessionStudent.id] || []) : []}
+            onAddRelation={handleAddStudentRelation}
+            onRequestRestaurant={handleAddRestaurantRequest}
           />
         )}
 
@@ -307,8 +317,11 @@ function App() {
         {section === "admin-pendientes" && isAdmin && (
           <AdminPendingPage
             pendingStudents={pendingStudents}
+            restaurantRequests={restaurantRequests.filter((r) => !r.approved)}
             onApprove={handleApprovePendingStudent}
             onRemove={handleRemovePendingStudent}
+            onApproveRestaurantRequest={handleApproveRestaurantRequest}
+            onRemoveRestaurantRequest={handleRemoveRestaurantRequest}
             pendingActionId={pendingActionId}
           />
         )}
@@ -317,6 +330,7 @@ function App() {
         {section === "admin-aprobados" && isAdmin && (
           <AdminApprovedStudentsPage
             approvedStudents={approvedStudents}
+            approvedRestaurantRequests={restaurantRequests.filter((r) => r.approved)}
           />
         )}
 
@@ -662,6 +676,57 @@ function App() {
     } else if (sessionStudent) {
       handleEditStudent(sessionStudent.id, updatedData);
     }
+  }
+
+  // ─── ALUMNO: AÑADIR RELACIÓN LABORAL ─────────────────────────────────────
+
+  // Crea una nueva relación alumno-restaurante desde el perfil del alumno en sesión
+  function handleAddStudentRelation(restaurantId, role, currentJob) {
+    if (!sessionStudent) return;
+    const relationId = `relation-${Date.now()}`;
+    const relation = {
+      id: relationId,
+      id_alumni: sessionStudent.id,
+      id_restaurant: restaurantId,
+      rol: role,
+      current_job: Boolean(currentJob)
+    };
+    setLocalRelations((current) => [...current, relation]);
+    setAdminFeedback({ type: "info", text: "Restaurante añadido a tu perfil correctamente." });
+  }
+
+  // ─── ALUMNO: SOLICITAR ALTA DE RESTAURANTE ────────────────────────────────
+
+  // Guarda una solicitud de alta de restaurante enviada por el alumno en sesión
+  function handleAddRestaurantRequest(description) {
+    if (!session) return;
+    const requestId = `req-${Date.now()}`;
+    const request = {
+      id: requestId,
+      studentId: session.id,
+      studentName: mainProfile.name,
+      studentEmail: session.email || mainProfile.email,
+      description: String(description).trim(),
+      createdAt: new Date().toISOString(),
+      approved: false
+    };
+    setRestaurantRequests((current) => [...current, request]);
+  }
+
+  // ─── ADMIN: GESTIONAR SOLICITUDES DE RESTAURANTE ─────────────────────────
+
+  // Marca una solicitud de restaurante como aprobada (pasa al panel de aprobadas)
+  function handleApproveRestaurantRequest(requestId) {
+    setRestaurantRequests((current) =>
+      current.map((r) => (r.id === requestId ? { ...r, approved: true } : r))
+    );
+    setAdminFeedback({ type: "info", text: "Solicitud de restaurante marcada como aprobada." });
+  }
+
+  // Elimina permanentemente una solicitud de restaurante
+  function handleRemoveRestaurantRequest(requestId) {
+    setRestaurantRequests((current) => current.filter((r) => r.id !== requestId));
+    setAdminFeedback({ type: "info", text: "Solicitud de restaurante eliminada." });
   }
 
   // ─── ADMIN: CREAR RESTAURANTE ─────────────────────────────────────────────

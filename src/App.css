@@ -900,3 +900,314 @@ body {
   cursor: pointer;
   transition: transform 0.1s;
 }
+
+/* ── Iconos del menú lateral ─────────────────────────────────────────────── */
+
+/* Cada ítem del menú (sidebar y móvil) con icono + etiqueta alineados */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+/* Icono emoji dentro del ítem de navegación */
+.nav-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 1.4rem;
+  text-align: center;
+}
+
+/* Etiqueta de texto del ítem */
+.nav-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Navegación dentro del sidebar */
+.sidebar-nav {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Logo del sidebar con tipografía mejorada */
+.sidebar-logo {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: 0.1em;
+  font-weight: 900;
+}
+
+/* Botón de perfil en la cabecera del sidebar */
+.profile-icon-btn {
+  font-size: 1.1rem;
+}
+
+/* Brand en la topbar móvil */
+.topbar-brand {
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+}
+
+/* ── Estilos para la sección de experiencias laborales en el perfil ─────── */
+
+/* Contenedor de la sección de experiencias en el perfil */
+.profile-jobs-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1.2rem;
+}
+
+/* Cabecera de la sección (título + botón añadir) */
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.profile-section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Texto cuando no hay experiencias */
+.profile-jobs-empty {
+  color: #9ca3af;
+  margin: 0.5rem 0;
+}
+
+/* Lista de tarjetas de experiencia laboral */
+.profile-jobs-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* Tarjeta individual de experiencia laboral */
+.profile-job-card {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+/* Miniatura del restaurante */
+.profile-job-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Info del restaurante en la tarjeta */
+.profile-job-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-job-info strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+}
+
+/* Dirección o detalle secundario */
+.profile-job-detail {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+/* Área de solicitud de restaurante no encontrado */
+.profile-request-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #374151;
+}
+
+/* Botón estilo enlace (sin fondo) */
+.link-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-btn:hover {
+  color: #1d4ed8;
+}
+
+/* Botón de acento (azul claro, diferente al primary-btn oscuro) */
+.accent-btn {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  font-weight: 600;
+}
+
+.accent-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Textarea del formulario de solicitud */
+.request-textarea {
+  width: 100%;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.request-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Texto de sugerencia dentro del modal */
+.modal-hint-text {
+  font-size: 0.83rem;
+  color: #6b7280;
+  margin-top: 0.6rem;
+  text-align: center;
+}
+
+/* Checkbox inline en formularios */
+.auth-field-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.auth-field-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+/* ── Solicitudes de restaurante (panel admin) ────────────────────────────── */
+
+/* Separador entre secciones del panel */
+.section-divider {
+  border: none;
+  border-top: 1.5px solid #e5e7eb;
+  margin: 1.8rem 0;
+}
+
+/* Tarjeta de solicitud de restaurante */
+.restaurant-request-card {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.6rem 0.9rem;
+  align-items: start;
+}
+
+/* Icono grande en la tarjeta de solicitud */
+.restaurant-request-icon {
+  font-size: 2rem;
+  line-height: 1;
+  text-align: center;
+  padding-top: 0.25rem;
+}
+
+/* Bloque de contenido de la solicitud */
+.restaurant-request-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Fila de metadatos (alumno, correo, fecha) */
+.restaurant-request-meta {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+/* Etiqueta de campo */
+.req-label {
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+/* Bloque de descripción del restaurante */
+.restaurant-request-description {
+  margin-top: 0.4rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.restaurant-request-description p {
+  margin: 0.25rem 0 0;
+  color: #374151;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Acciones de admin en la tarjeta de solicitud de restaurante */
+.restaurant-request-card .admin-review-actions {
+  grid-column: 1 / -1;
+}
+
+/* Tarjeta de solicitud aprobada: borde verde */
+.approved-request-card {
+  border-left: 4px solid #22c55e;
+}
+
+/* Badge de "revisada" en tarjeta aprobada */
+.approved-request-badge {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}

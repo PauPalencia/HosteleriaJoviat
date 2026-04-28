@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getRestaurantPhoto } from "../utils/ui";
 
 export default function ProfilePage({
   profile,
@@ -7,11 +8,15 @@ export default function ProfilePage({
   sessionIsStudent,
   onGoToAuth,
   sessionStudent,
-  onUpdateProfile
+  onUpdateProfile,
+  // Nuevas props para gestión de experiencias laborales (solo alumnos)
+  allRestaurants = [],
+  studentJobs = [],
+  onAddRelation,
+  onRequestRestaurant
 }) {
-  // Controla si se muestra el formulario de edición
+  // ── Estado del modal de edición de perfil ────────────────────────────────
   const [editOpen, setEditOpen] = useState(false);
-  // Datos del formulario de edición (se inicializan al abrir)
   const [editForm, setEditForm] = useState({
     Name: "",
     Phone: "",
@@ -19,15 +24,25 @@ export default function ProfilePage({
     LinkedIn: "",
     PhotoURL: ""
   });
-  // Feedback tras guardar
   const [saved, setSaved] = useState(false);
 
-  // Cualquier usuario autenticado puede editar su perfil.
-  // - Alumnos: editan todos los campos de su ficha (Name, Phone, Curso, LinkedIn, Photo)
-  // - Administradores: editan nombre y foto solamente
-  const canEdit = isAuthenticated && (isAdmin || sessionStudent || sessionIsStudent);
+  // ── Estado del modal de añadir experiencia laboral ───────────────────────
+  const [addJobOpen, setAddJobOpen] = useState(false);
+  const [jobForm, setJobForm] = useState({ restaurantId: "", role: "", currentJob: false });
+  const [jobSaved, setJobSaved] = useState(false);
 
-  // Abre el formulario de edición cargando los datos actuales del perfil
+  // ── Estado del modal de solicitar restaurante ────────────────────────────
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestDesc, setRequestDesc] = useState("");
+  const [requestSent, setRequestSent] = useState(false);
+
+  // Un alumno puede editar su perfil y gestionar sus experiencias
+  const canEdit = isAuthenticated && (isAdmin || sessionStudent || sessionIsStudent);
+  // Solo alumnos (no admins) pueden añadir restaurantes a su perfil
+  const canManageJobs = isAuthenticated && sessionIsStudent && !isAdmin && onAddRelation;
+
+  // ── Handlers de edición de perfil ───────────────────────────────────────
+
   function handleOpenEdit() {
     setEditForm({
       Name: sessionStudent?.Name || profile.name || "",
@@ -40,7 +55,6 @@ export default function ProfilePage({
     setEditOpen(true);
   }
 
-  // Guarda los cambios y cierra el formulario
   function handleSave(event) {
     event.preventDefault();
     onUpdateProfile({
@@ -54,7 +68,41 @@ export default function ProfilePage({
     setEditOpen(false);
   }
 
-  // Pantalla para usuarios sin sesión
+  // ── Handlers de experiencia laboral ─────────────────────────────────────
+
+  // Abre el modal de añadir restaurante reiniciando el formulario
+  function handleOpenAddJob() {
+    setJobForm({ restaurantId: allRestaurants[0]?.id || "", role: "", currentJob: false });
+    setJobSaved(false);
+    setAddJobOpen(true);
+  }
+
+  // Guarda la nueva relación alumno-restaurante
+  function handleSaveJob(event) {
+    event.preventDefault();
+    if (!jobForm.restaurantId) return;
+    onAddRelation(jobForm.restaurantId, jobForm.role.trim(), jobForm.currentJob);
+    setJobSaved(true);
+    setAddJobOpen(false);
+  }
+
+  // ── Handlers de solicitud de restaurante ────────────────────────────────
+
+  function handleOpenRequest() {
+    setRequestDesc("");
+    setRequestSent(false);
+    setRequestOpen(true);
+  }
+
+  function handleSendRequest(event) {
+    event.preventDefault();
+    if (!requestDesc.trim()) return;
+    onRequestRestaurant(requestDesc.trim());
+    setRequestSent(true);
+    setRequestOpen(false);
+  }
+
+  // ── Pantalla sin sesión ──────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <section className="panel">
@@ -72,7 +120,7 @@ export default function ProfilePage({
     <section className="panel">
       <div className="profile-logo">JOVIAT</div>
 
-      {/* Cabecera del perfil con botón de edición */}
+      {/* ── Cabecera con botón de edición ─────────────────────────────────── */}
       <div className="profile-header-row">
         <h2>Mi perfil</h2>
         {canEdit && (
@@ -82,19 +130,18 @@ export default function ProfilePage({
         )}
       </div>
 
-      {/* Mensaje de confirmación tras guardar */}
-      {saved && (
-        <p className="info-box">Perfil actualizado correctamente.</p>
-      )}
+      {/* Confirmación de guardado */}
+      {saved && <p className="info-box">Perfil actualizado correctamente.</p>}
+      {jobSaved && <p className="info-box">Restaurante añadido a tu perfil.</p>}
+      {requestSent && <p className="info-box">Solicitud enviada al administrador.</p>}
 
-      {/* Tarjeta con los datos del perfil */}
+      {/* ── Tarjeta de datos del perfil ───────────────────────────────────── */}
       <div className="profile-card">
         <img src={profile.photo} alt={profile.name} />
         <div>
           <p><strong>Nombre:</strong> {profile.name}</p>
           <p><strong>Email:</strong> {profile.email}</p>
           <p><strong>Estado:</strong> {profile.role}</p>
-          {/* Los campos de alumno solo se muestran si no es admin */}
           {!isAdmin && (
             <>
               <p><strong>Curso:</strong> {profile.curso}</p>
@@ -107,7 +154,58 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {/* ── Modal de edición de perfil ──────────────────────────────────────── */}
+      {/* ── Sección de experiencias laborales (solo alumnos) ─────────────── */}
+      {canManageJobs && (
+        <div className="profile-jobs-section">
+          <div className="profile-section-header">
+            <h3>🍽️ Mis experiencias laborales</h3>
+            <button className="small-btn accent-btn" onClick={handleOpenAddJob}>
+              + Añadir restaurante
+            </button>
+          </div>
+
+          {/* Lista de restaurantes donde trabaja/trabajó el alumno */}
+          {studentJobs.length === 0 ? (
+            <p className="state-text profile-jobs-empty">
+              Todavía no tienes restaurantes añadidos a tu perfil.
+            </p>
+          ) : (
+            <div className="profile-jobs-list">
+              {studentJobs.map((job, index) => (
+                <div key={index} className="profile-job-card">
+                  <img
+                    className="profile-job-thumb"
+                    src={getRestaurantPhoto(job.restaurant)}
+                    alt={job.restaurant?.Name || "Restaurante"}
+                  />
+                  <div className="profile-job-info">
+                    <strong>{job.restaurant?.Name || "Restaurante no encontrado"}</strong>
+                    <p className="profile-job-detail">{job.restaurant?.Address || ""}</p>
+                    <div className="badge-row">
+                      {job.role && (
+                        <span className="badge badge-dark">Cargo: {job.role}</span>
+                      )}
+                      <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
+                        {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Botón para solicitar que el administrador añada un restaurante */}
+          <div className="profile-request-hint">
+            <span>¿No encuentras tu restaurante en la lista?</span>
+            <button className="link-btn" onClick={handleOpenRequest}>
+              Solicita que lo añadan →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: editar perfil ──────────────────────────────────────────── */}
       {editOpen && (
         <div className="modal-backdrop">
           <div className="modal-box modal-box-wide">
@@ -116,7 +214,6 @@ export default function ProfilePage({
             </h3>
             <form className="auth-form clean-auth-form" onSubmit={handleSave}>
 
-              {/* Nombre: visible para todos */}
               <label className="auth-field">
                 <span>Nombre completo</span>
                 <input
@@ -155,7 +252,6 @@ export default function ProfilePage({
                 </>
               )}
 
-              {/* URL de foto de perfil: visible para todos */}
               <label className="auth-field">
                 <span>URL de foto de perfil <small className="optional-label">(opcional)</small></span>
                 <input
@@ -166,7 +262,6 @@ export default function ProfilePage({
                 />
               </label>
 
-              {/* Previsualización de la nueva foto */}
               {editForm.PhotoURL && (
                 <div className="photo-preview-wrap">
                   <img
@@ -181,6 +276,122 @@ export default function ProfilePage({
               <div className="modal-actions">
                 <button type="submit" className="primary-btn">Guardar cambios</button>
                 <button type="button" className="small-btn" onClick={() => setEditOpen(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: añadir restaurante al perfil ───────────────────────────── */}
+      {addJobOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-box modal-box-wide">
+            <h3 className="modal-title">Añadir experiencia laboral</h3>
+
+            {allRestaurants.length === 0 ? (
+              <>
+                <p className="modal-text">No hay restaurantes disponibles en la base de datos.</p>
+                <div className="modal-actions">
+                  <button className="small-btn" onClick={() => setAddJobOpen(false)}>Cerrar</button>
+                  <button className="link-btn" onClick={() => { setAddJobOpen(false); handleOpenRequest(); }}>
+                    Solicitar añadir un restaurante →
+                  </button>
+                </div>
+              </>
+            ) : (
+              <form className="auth-form clean-auth-form" onSubmit={handleSaveJob}>
+
+                {/* Selector de restaurante */}
+                <label className="auth-field">
+                  <span>Restaurante <strong>*</strong></span>
+                  <select
+                    value={jobForm.restaurantId}
+                    onChange={(e) => setJobForm((f) => ({ ...f, restaurantId: e.target.value }))}
+                    required
+                  >
+                    <option value="">Selecciona un restaurante...</option>
+                    {allRestaurants.map((r) => (
+                      <option key={r.id} value={r.id}>{r.Name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Cargo / rol */}
+                <label className="auth-field">
+                  <span>Cargo / Rol <small className="optional-label">(opcional)</small></span>
+                  <input
+                    placeholder="ej. Cocinero, Camarero, Jefe de sala..."
+                    value={jobForm.role}
+                    onChange={(e) => setJobForm((f) => ({ ...f, role: e.target.value }))}
+                  />
+                </label>
+
+                {/* ¿Trabajando actualmente? */}
+                <label className="auth-field auth-field-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={jobForm.currentJob}
+                    onChange={(e) => setJobForm((f) => ({ ...f, currentJob: e.target.checked }))}
+                  />
+                  <span>Estoy trabajando aquí actualmente</span>
+                </label>
+
+                <div className="modal-actions">
+                  <button type="submit" className="primary-btn" disabled={!jobForm.restaurantId}>
+                    Añadir experiencia
+                  </button>
+                  <button type="button" className="small-btn" onClick={() => setAddJobOpen(false)}>
+                    Cancelar
+                  </button>
+                </div>
+
+                {/* Enlace para solicitar un restaurante que no está en la lista */}
+                <p className="modal-hint-text">
+                  ¿No ves tu restaurante?{" "}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => { setAddJobOpen(false); handleOpenRequest(); }}
+                  >
+                    Solicita que lo añadan →
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: solicitar alta de restaurante ──────────────────────────── */}
+      {requestOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-box modal-box-wide">
+            <h3 className="modal-title">Solicitar añadir un restaurante</h3>
+            <p className="modal-text">
+              Describe el restaurante donde trabajas o has trabajado. Un administrador revisará tu solicitud
+              y, si todo está correcto, lo añadirá a la plataforma.
+            </p>
+            <form className="auth-form clean-auth-form" onSubmit={handleSendRequest}>
+
+              <label className="auth-field">
+                <span>Descripción del restaurante <strong>*</strong></span>
+                <textarea
+                  className="request-textarea"
+                  rows={5}
+                  placeholder="Nombre del restaurante, dirección, teléfono, tu cargo, etc."
+                  value={requestDesc}
+                  onChange={(e) => setRequestDesc(e.target.value)}
+                  required
+                />
+              </label>
+
+              <div className="modal-actions">
+                <button type="submit" className="primary-btn" disabled={!requestDesc.trim()}>
+                  Enviar solicitud
+                </button>
+                <button type="button" className="small-btn" onClick={() => setRequestOpen(false)}>
                   Cancelar
                 </button>
               </div>

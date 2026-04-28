@@ -1,11 +1,13 @@
 import React from "react";
 import { getStudentPhoto } from "../utils/ui";
 
-// Página que lista todos los alumnos que han sido aprobados por un administrador
-export default function AdminApprovedStudentsPage({ approvedStudents }) {
+// Página que lista los alumnos aprobados y las solicitudes de restaurante revisadas
+export default function AdminApprovedStudentsPage({ approvedStudents, approvedRestaurantRequests = [] }) {
   return (
     <section className="panel">
-      <h2>Solicitudes aprobadas</h2>
+
+      {/* ── Sección: alumnos aprobados ────────────────────────────────────── */}
+      <h2>✅ Solicitudes aprobadas</h2>
       <p className="section-helper-text">
         Estos alumnos han sido validados y tienen acceso a la plataforma.
       </p>
@@ -29,6 +31,56 @@ export default function AdminApprovedStudentsPage({ approvedStudents }) {
                   )}
                   <p><strong>ID:</strong> {student.id}</p>
                 </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {/* ── Separador ─────────────────────────────────────────────────────── */}
+      <hr className="section-divider" />
+
+      {/* ── Sección: solicitudes de restaurante revisadas ─────────────────── */}
+      <h2>🏪 Solicitudes de restaurante revisadas</h2>
+      <p className="section-helper-text">
+        Peticiones de restaurante que han sido marcadas como revisadas.
+        Puedes crearlos manualmente desde "Crear restaurantes".
+      </p>
+
+      {approvedRestaurantRequests.length === 0 ? (
+        <p className="state-text">No hay solicitudes de restaurante revisadas todavía.</p>
+      ) : (
+        <div className="spaced-list">
+          {approvedRestaurantRequests.map((req) => (
+            <article key={req.id} className="admin-review-card restaurant-request-card approved-request-card">
+              {/* Icono */}
+              <div className="restaurant-request-icon">🏪</div>
+
+              <div className="restaurant-request-body">
+                {/* Datos del alumno que envió la solicitud */}
+                <div className="restaurant-request-meta">
+                  <span className="req-label">👤 Alumno:</span>
+                  <span>{req.studentName || "—"}</span>
+                </div>
+                <div className="restaurant-request-meta">
+                  <span className="req-label">✉️ Correo:</span>
+                  <span>{req.studentEmail || "—"}</span>
+                </div>
+                <div className="restaurant-request-meta">
+                  <span className="req-label">🕐 Fecha:</span>
+                  <span>{req.createdAt ? new Date(req.createdAt).toLocaleDateString("es-ES") : "—"}</span>
+                </div>
+
+                {/* Descripción que escribió el alumno */}
+                <div className="restaurant-request-description">
+                  <span className="req-label">📝 Descripción:</span>
+                  <p>{req.description}</p>
+                </div>
+              </div>
+
+              {/* Etiqueta de estado revisado */}
+              <div className="approved-request-badge">
+                <span className="badge badge-green">✅ Revisada</span>
               </div>
             </article>
           ))}
