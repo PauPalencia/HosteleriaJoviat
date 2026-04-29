@@ -50,7 +50,11 @@ export default function RestaurantesPage({
       <div className="restaurant-layout">
         {isMobile && (
           <div className="map-sticky-wrap">
-            <LeafletRestaurantMap restaurants={restaurants} jobsByRestaurantId={jobsByRestaurantId} />
+            <LeafletRestaurantMap
+              restaurants={restaurants}
+              jobsByRestaurantId={jobsByRestaurantId}
+              onOpenRestaurant={onOpenRestaurant}
+            />
           </div>
         )}
 
@@ -90,7 +94,11 @@ export default function RestaurantesPage({
         {!isMobile && (
           <div className="map-sticky-wrap">
             {/* El mapa siempre muestra todos los restaurantes, no solo los de la página */}
-            <LeafletRestaurantMap restaurants={restaurants} jobsByRestaurantId={jobsByRestaurantId} />
+            <LeafletRestaurantMap
+              restaurants={restaurants}
+              jobsByRestaurantId={jobsByRestaurantId}
+              onOpenRestaurant={onOpenRestaurant}
+            />
           </div>
         )}
       </div>

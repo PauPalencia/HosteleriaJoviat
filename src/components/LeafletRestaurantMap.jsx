@@ -26,12 +26,20 @@ const MAX_POPUP_PHOTOS = 5;
  *   jobsByRestaurantId  {Object}  - Mapa { restaurantId: [ { currentJob, student } ] }
  *   forceCenter         {boolean} - Si true, centra el mapa en el primer restaurante al zoom 16
  */
-export default function LeafletRestaurantMap({ restaurants, jobsByRestaurantId = {}, forceCenter = false }) {
+export default function LeafletRestaurantMap({
+  restaurants,
+  jobsByRestaurantId = {},
+  forceCenter = false,
+  onOpenRestaurant
+}) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
   // Guardamos la última función drawClusters para poder eliminarla al actualizar puntos
   const drawClustersRef = useRef(null);
+  // Referencia actualizada al callback de navegación (evita closures obsoletos)
+  const onOpenRestaurantRef = useRef(onOpenRestaurant);
+  useEffect(() => { onOpenRestaurantRef.current = onOpenRestaurant; }, [onOpenRestaurant]);
 
   // Filtrar restaurantes con coordenadas válidas y añadir sus relaciones de alumnos
   const points = useMemo(
@@ -88,11 +96,38 @@ export default function LeafletRestaurantMap({ restaurants, jobsByRestaurantId =
 
         clusters.forEach((cluster) => {
           if (cluster.length === 1) {
-            // ── Marcador individual: popup con info del restaurante ──────────
+            // ── Marcador individual: icono Joviat "J" + popup con info ───────
             const point = cluster[0];
-            const popupHtml = buildSingleRestaurantPopup(point.name, point.jobs);
-            const marker = L.marker([point.lat, point.lng]);
-            marker.addTo(markerLayer).bindPopup(popupHtml, { maxWidth: 300, minWidth: 200 });
+            const popupHtml = buildSingleRestaurantPopup(point.name, point.jobs, point.id);
+
+            // Icono de gota personalizado con la letra J de Joviat
+            const joviatIcon = L.divIcon({
+              html: `<div class="map-joviat-pin"><span class="map-joviat-pin-letter">J</span></div>`,
+              className: "",
+              iconSize: [36, 46],
+              iconAnchor: [18, 46],
+              popupAnchor: [0, -48]
+            });
+
+            const marker = L.marker([point.lat, point.lng], { icon: joviatIcon });
+            const popup = L.popup({ maxWidth: 300, minWidth: 220 }).setContent(popupHtml);
+            marker.bindPopup(popup);
+
+            // Al abrir el popup, adjuntar el handler del botón "Ver ficha"
+            marker.on("popupopen", () => {
+              const btn = popup.getElement()?.querySelector("[data-open-restaurant]");
+              if (btn) {
+                btn.addEventListener("click", () => {
+                  const id = btn.getAttribute("data-open-restaurant");
+                  if (id && onOpenRestaurantRef.current) {
+                    marker.closePopup();
+                    onOpenRestaurantRef.current(id);
+                  }
+                });
+              }
+            });
+
+            marker.addTo(markerLayer);
           } else {
             // ── Clúster: icono circular con el número de restaurantes ────────
             const centerLat = cluster.reduce((sum, p) => sum + p.lat, 0) / cluster.length;
@@ -211,7 +246,7 @@ function buildClusters(points, map, pixelRadius) {
  * @param {Array}  jobs           - Array de { currentJob, student }
  * @returns {string}              - HTML del popup
  */
-function buildSingleRestaurantPopup(restaurantName, jobs) {
+function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId) {
   // Separar alumnos actuales y pasados (deduplificados por id)
   const seenIds = new Set();
   const currentStudents = [];
@@ -291,10 +326,24 @@ function buildSingleRestaurantPopup(restaurantName, jobs) {
     `
     : `<p style="font-size:0.8rem;color:#9ca3af;margin:0.4rem 0 0">Sin alumnos registrados</p>`;
 
+  // Botón "Ver ficha" con data-attribute para el handler React
+  const viewBtnHtml = restaurantId ? `
+    <button
+      data-open-restaurant="${escapeHtml(restaurantId)}"
+      style="
+        margin-top:0.55rem;width:100%;padding:0.38rem 0.7rem;
+        background:#111;color:#fff;border:none;border-radius:7px;
+        font-size:0.82rem;font-weight:600;cursor:pointer;
+        font-family:'Segoe UI',Arial,sans-serif;
+      "
+    >Ver ficha →</button>
+  ` : "";
+
   return `
     <div style="font-family:'Segoe UI',Arial,sans-serif">
       <strong style="font-size:0.95rem;color:#111">${escapeHtml(restaurantName)}</strong>
       ${studentsSection}
+      ${viewBtnHtml}
     </div>
   `;
 }

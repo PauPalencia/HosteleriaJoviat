@@ -18,9 +18,11 @@ export default function StudentDetailPage({
   backLabel,
   onOpenRestaurant,
   isAdmin,
+  isAuthenticated,
   sessionStudentId,
   onEditStudent,
-  onDeleteStudent
+  onDeleteStudent,
+  onGoToAuth
 }) {
   // Controla si el panel de edición está visible
   const [editOpen, setEditOpen] = useState(false);
@@ -91,12 +93,29 @@ export default function StudentDetailPage({
         <img src={getStudentPhoto(student)} alt={student.Name} />
         <div>
           <h2>{student.Name}</h2>
-          <p>ID: {student.id}</p>
           <p><strong>Estado:</strong> {getRoleLabel(normalizeRole(student.Status || student.status, ROLE_KEYS.STUDENT))}</p>
-          <p><strong>Email:</strong> {student.Email || "-"}</p>
-          <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
           <p><strong>Curso:</strong> {student.Curso || "-"}</p>
-          <p><strong>LinkedIn:</strong> {student.LinkedIn || "-"}</p>
+
+          {/* Información de contacto: visible solo con sesión iniciada */}
+          {isAuthenticated ? (
+            <>
+              <p><strong>Email:</strong> {student.Email || "-"}</p>
+              <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
+              <p><strong>LinkedIn:</strong> {student.LinkedIn || "-"}</p>
+            </>
+          ) : (
+            <div className="contact-hidden-box">
+              <span className="contact-hidden-lock">🔒</span>
+              <span className="contact-hidden-text">
+                Inicia sesión para ver la información de contacto.{" "}
+                {onGoToAuth && (
+                  <button className="link-btn" onClick={onGoToAuth}>
+                    Iniciar sesión
+                  </button>
+                )}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

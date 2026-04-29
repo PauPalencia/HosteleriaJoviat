@@ -1,69 +1,123 @@
 import React, { useMemo, useState } from "react";
+import {
+  HomeIcon, StudentsIcon, RestaurantsIcon, ClipboardIcon, CheckCircleIcon,
+  UserPlusIcon, StoreIcon, SlidersIcon, LogInIcon, LogOutIcon, UserCircleIcon, GlobeIcon
+} from "./SvgIcons";
+import { t, LANGS, LANG_LABELS } from "../utils/translations";
 
-// Mapa de iconos para cada sección del menú
+// Mapa de sección → componente de icono SVG
 const SECTION_ICONS = {
-  "inicio":                    "🏠",
-  "alumnos":                   "🎓",
-  "restaurantes":              "🍽️",
-  "admin-pendientes":          "📋",
-  "admin-aprobados":           "✅",
-  "admin-crear-alumnos":       "➕",
-  "admin-crear-restaurantes":  "🏪",
-  "admin-herramientas":        "⚙️",
-  "auth":                      "🔑",
-  "perfil":                    "👤"
+  "inicio":                    HomeIcon,
+  "alumnos":                   StudentsIcon,
+  "restaurantes":              RestaurantsIcon,
+  "admin-pendientes":          ClipboardIcon,
+  "admin-aprobados":           CheckCircleIcon,
+  "admin-crear-alumnos":       UserPlusIcon,
+  "admin-crear-restaurantes":  StoreIcon,
+  "admin-herramientas":        SlidersIcon,
+  "auth":                      LogInIcon,
 };
 
-export default function LayoutNav({ isMobile, section, onNavigate, onProfile, onLogout, isAuthenticated, isAdmin }) {
+// Clave de traducción para cada sección
+const SECTION_KEYS = {
+  "inicio":                    "nav_inicio",
+  "alumnos":                   "nav_alumnos",
+  "restaurantes":              "nav_restaurantes",
+  "admin-pendientes":          "nav_pendientes",
+  "admin-aprobados":           "nav_aprobados",
+  "admin-crear-alumnos":       "nav_crear_alumnos",
+  "admin-crear-restaurantes":  "nav_crear_restaurantes",
+  "admin-herramientas":        "nav_herramientas",
+  "auth":                      "nav_login",
+};
+
+export default function LayoutNav({
+  isMobile, section, onNavigate, onProfile, onLogout,
+  isAuthenticated, isAdmin,
+  lang = "es", onLangChange,
+  userEmail, userPhoto
+}) {
   const [open, setOpen] = useState(false);
 
-  // Construye la lista de ítems de navegación según el rol del usuario
+  // Lista de secciones según el rol del usuario
   const items = useMemo(() => {
-    const baseItems = [
-      { key: "inicio",        label: "Inicio" },
-      { key: "alumnos",       label: "Alumnos" },
-      { key: "restaurantes",  label: "Restaurantes" }
+    const base = [
+      { key: "inicio" },
+      { key: "alumnos" },
+      { key: "restaurantes" },
     ];
 
     if (isAdmin) {
-      baseItems.push(
-        { key: "admin-pendientes",         label: "Solicitudes pendientes" },
-        { key: "admin-aprobados",          label: "Solicitudes aprobadas" },
-        { key: "admin-crear-alumnos",      label: "Crear alumnos" },
-        { key: "admin-crear-restaurantes", label: "Crear restaurantes" },
-        { key: "admin-herramientas",       label: "Panel de administración" }
+      base.push(
+        { key: "admin-pendientes" },
+        { key: "admin-aprobados" },
+        { key: "admin-crear-alumnos" },
+        { key: "admin-crear-restaurantes" },
+        { key: "admin-herramientas" },
       );
     }
 
     if (!isAuthenticated) {
-      baseItems.push({ key: "auth", label: "Login / Sign in" });
+      base.push({ key: "auth" });
     }
 
-    return baseItems;
+    return base;
   }, [isAdmin, isAuthenticated]);
 
-  // ── Versión móvil: topbar con menú desplegable ────────────────────────────
+  // Renderiza un ítem de navegación con icono SVG + etiqueta traducida
+  function NavItem({ itemKey, onClick }) {
+    const IconComponent = SECTION_ICONS[itemKey] || HomeIcon;
+    const label = t(lang, SECTION_KEYS[itemKey] || itemKey);
+    const isActive = section === itemKey;
+    return (
+      <button
+        className={`nav-item ${isActive ? "active" : ""}`}
+        onClick={onClick}
+        title={label}
+      >
+        <span className="nav-icon"><IconComponent size={18} /></span>
+        <span className="nav-label">{label}</span>
+      </button>
+    );
+  }
+
+  // Selector de idioma: tres botones pill (ES / CA / EN)
+  function LangSelector() {
+    return (
+      <div className="lang-selector">
+        <span className="lang-selector-icon"><GlobeIcon size={14} /></span>
+        {LANGS.map((l) => (
+          <button
+            key={l}
+            className={`lang-btn ${lang === l ? "lang-btn-active" : ""}`}
+            onClick={() => onLangChange(l)}
+            aria-pressed={lang === l}
+          >
+            {LANG_LABELS[l]}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // ── Versión móvil ──────────────────────────────────────────────────────────
   if (isMobile) {
     return (
       <header className="mobile-topbar">
         <div className="mobile-topbar-head">
           <strong className="topbar-brand">JOVIAT</strong>
           <div className="mobile-actions">
-            {/* Botón de perfil */}
             <button
               className="icon-btn"
               onClick={() => { onProfile(); setOpen(false); }}
               aria-label="Perfil"
-              title="Mi perfil"
             >
-              {isAuthenticated ? "👤" : "🔑"}
+              <UserCircleIcon size={18} />
             </button>
-            {/* Botón hamburguesa */}
             <button
               className="icon-btn"
               onClick={() => setOpen((v) => !v)}
               aria-label="Abrir menú"
-              title="Menú"
             >
               ☰
             </button>
@@ -73,14 +127,11 @@ export default function LayoutNav({ isMobile, section, onNavigate, onProfile, on
         {open && (
           <nav className="mobile-menu-dropdown mobile-menu-shell">
             {items.map((item) => (
-              <button
+              <NavItem
                 key={item.key}
-                className={`nav-item ${section === item.key ? "active" : ""}`}
+                itemKey={item.key}
                 onClick={() => { onNavigate(item.key); setOpen(false); }}
-              >
-                <span className="nav-icon">{SECTION_ICONS[item.key] || "•"}</span>
-                <span className="nav-label">{item.label}</span>
-              </button>
+              />
             ))}
 
             {isAuthenticated && (
@@ -88,20 +139,25 @@ export default function LayoutNav({ isMobile, section, onNavigate, onProfile, on
                 className="danger-logout-btn nav-item"
                 onClick={() => { onLogout(); setOpen(false); }}
               >
-                <span className="nav-icon">🚪</span>
-                <span className="nav-label">Cerrar sesión</span>
+                <span className="nav-icon"><LogOutIcon size={18} /></span>
+                <span className="nav-label">{t(lang, "nav_logout")}</span>
               </button>
             )}
+
+            {/* Selector de idioma en menú móvil */}
+            <div className="mobile-lang-wrap">
+              <LangSelector />
+            </div>
           </nav>
         )}
       </header>
     );
   }
 
-  // ── Versión escritorio: sidebar fija ─────────────────────────────────────
+  // ── Versión escritorio: sidebar ────────────────────────────────────────────
   return (
     <aside className="sidebar sidebar-shell">
-      <div>
+      <div className="sidebar-top">
         {/* Cabecera: logo + botón de perfil */}
         <div className="sidebar-head">
           <h1 className="sidebar-logo">JOVIAT</h1>
@@ -111,35 +167,49 @@ export default function LayoutNav({ isMobile, section, onNavigate, onProfile, on
             aria-label="Mi perfil"
             title={isAuthenticated ? "Mi perfil" : "Iniciar sesión"}
           >
-            {isAuthenticated ? "👤" : "🔑"}
+            <UserCircleIcon size={18} />
           </button>
         </div>
+
+        {/* Info del usuario autenticado: foto circular + email */}
+        {isAuthenticated && userEmail && (
+          <div className="sidebar-user-info">
+            {userPhoto && (
+              <img
+                src={userPhoto}
+                alt="avatar"
+                className="sidebar-user-avatar"
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            )}
+            <span className="sidebar-user-email" title={userEmail}>
+              {userEmail.length > 22 ? userEmail.slice(0, 22) + "…" : userEmail}
+            </span>
+          </div>
+        )}
 
         {/* Ítems de navegación */}
         <nav className="sidebar-nav">
           {items.map((item) => (
-            <button
+            <NavItem
               key={item.key}
-              className={`nav-item ${section === item.key ? "active" : ""}`}
+              itemKey={item.key}
               onClick={() => onNavigate(item.key)}
-              title={item.label}
-            >
-              <span className="nav-icon">{SECTION_ICONS[item.key] || "•"}</span>
-              <span className="nav-label">{item.label}</span>
-            </button>
+            />
           ))}
         </nav>
       </div>
 
-      {/* Pie de la barra lateral: botón de cerrar sesión */}
-      {isAuthenticated && (
-        <div className="sidebar-footer">
+      {/* Pie de la barra: idioma + cerrar sesión */}
+      <div className="sidebar-footer">
+        <LangSelector />
+        {isAuthenticated && (
           <button className="danger-logout-btn nav-item" onClick={onLogout}>
-            <span className="nav-icon">🚪</span>
-            <span className="nav-label">Cerrar sesión</span>
+            <span className="nav-icon"><LogOutIcon size={18} /></span>
+            <span className="nav-label">{t(lang, "nav_logout")}</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 }
