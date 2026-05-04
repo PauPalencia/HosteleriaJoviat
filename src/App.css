@@ -38,6 +38,11 @@ body {
   background: #111;
   color: #fff;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .mobile-topbar { position: sticky; top: 0; z-index: 30; background: #000; color: #fff; padding: 0.8rem; }
@@ -961,6 +966,10 @@ body {
 /* Botón de perfil en la cabecera del sidebar */
 .profile-icon-btn {
   font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 /* Brand en la topbar móvil */
