@@ -146,7 +146,7 @@ export default function StudentDetailPage({
                   <span>ID: {job.restaurant?.id || "-"}</span>
                 </div>
                 <div className="work-preview-info work-preview-info-column">
-                  <p><strong>Dirección:</strong> {job.restaurant?.Address || "-"}</p>
+                  <p><strong>{t(lang, "rest_field_address")}:</strong> {job.restaurant?.Address || "-"}</p>
                   <p><strong>{t(lang, "detail_email")}:</strong> {job.restaurant?.Email || "-"}</p>
                   <p><strong>{t(lang, "detail_phone")}:</strong> {job.restaurant?.Phone || "-"}</p>
                   <div className="badge-row">

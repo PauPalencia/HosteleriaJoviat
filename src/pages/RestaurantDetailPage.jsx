@@ -22,7 +22,7 @@ export default function RestaurantDetailPage({ restaurant, jobs, studentSummaryB
         </div>
 
         <div className="detail-map-wrap restaurant-top-map">
-          <LeafletRestaurantMap restaurants={[restaurant]} forceCenter />
+          <LeafletRestaurantMap restaurants={[restaurant]} forceCenter lang={lang} />
         </div>
       </div>
 

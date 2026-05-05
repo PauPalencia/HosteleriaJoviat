@@ -218,6 +218,18 @@ const translations = {
     error_zone_login:          "Ir a login",
     app_loading:               "Cargando datos desde Firestore…",
     app_error:                 "Error",
+
+    // ── AdminPendingPage ─────────────────────────────────────────────────────
+    pend_student_helper:       "Al aceptar una solicitud se activa el alumno y se crea automáticamente su usuario en Firebase Auth.",
+    pend_rest_helper:          "Peticiones enviadas por alumnos para que se añada un restaurante a la plataforma. Puedes aprobarlas (pasan al panel de aprobadas) o rechazarlas.",
+
+    // ── Mapa de restaurantes (popup) ─────────────────────────────────────────
+    map_grouped:               "restaurantes agrupados",
+    map_zoom_hint:             "Haz zoom para ver cada restaurante por separado.",
+    map_no_students:           "Sin alumnos registrados",
+    map_active:                "Activo",
+    map_former:                "Anterior",
+    map_view_card:             "Ver ficha →",
   },
 
   ca: {
@@ -417,6 +429,16 @@ const translations = {
     error_zone_login:          "Anar a login",
     app_loading:               "Carregant dades des de Firestore…",
     app_error:                 "Error",
+
+    pend_student_helper:       "En acceptar una sol·licitud s'activa l'alumne i es crea automàticament el seu usuari a Firebase Auth.",
+    pend_rest_helper:          "Peticions enviades per alumnes per afegir un restaurant a la plataforma. Pots aprovar-les (passen al panell d'aprovades) o rebutjar-les.",
+
+    map_grouped:               "restaurants agrupats",
+    map_zoom_hint:             "Fes zoom per veure cada restaurant per separat.",
+    map_no_students:           "Sense alumnes registrats",
+    map_active:                "Actiu",
+    map_former:                "Anterior",
+    map_view_card:             "Veure fitxa →",
   },
 
   en: {
@@ -616,6 +638,16 @@ const translations = {
     error_zone_login:          "Go to login",
     app_loading:               "Loading data from Firestore…",
     app_error:                 "Error",
+
+    pend_student_helper:       "Accepting a request activates the student and automatically creates their Firebase Auth user.",
+    pend_rest_helper:          "Requests sent by students to add a restaurant to the platform. You can approve them (they move to the approved panel) or reject them.",
+
+    map_grouped:               "grouped restaurants",
+    map_zoom_hint:             "Zoom in to see each restaurant separately.",
+    map_no_students:           "No students registered",
+    map_active:                "Active",
+    map_former:                "Former",
+    map_view_card:             "View card →",
   }
 };
 

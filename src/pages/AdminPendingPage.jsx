@@ -50,7 +50,7 @@ export default function AdminPendingPage({
       {activeTab === "students" && (
         <div className="pending-tab-content">
           <p className="section-helper-text">
-            Al aceptar una solicitud se activa el alumno y se crea automáticamente su usuario en Firebase Auth.
+            {t(lang, "pend_student_helper")}
           </p>
 
           {pendingStudents.length === 0 ? (
@@ -100,8 +100,7 @@ export default function AdminPendingPage({
       {activeTab === "restaurants" && (
         <div className="pending-tab-content">
           <p className="section-helper-text">
-            Peticiones enviadas por alumnos para que se añada un restaurante a la plataforma.
-            Puedes aprobarlas (pasan al panel de aprobadas) o rechazarlas.
+            {t(lang, "pend_rest_helper")}
           </p>
 
           {restaurantRequests.length === 0 ? (
@@ -124,13 +123,13 @@ export default function AdminPendingPage({
                       <span>{req.studentEmail || "—"}</span>
                     </div>
                     <div className="restaurant-request-meta">
-                      <span className="req-label">🕐 Fecha:</span>
+                      <span className="req-label">🕐 {t(lang, "lbl_date")}:</span>
                       <span>{req.createdAt ? new Date(req.createdAt).toLocaleDateString("es-ES") : "—"}</span>
                     </div>
 
                     {/* Descripción libre del restaurante */}
                     <div className="restaurant-request-description">
-                      <span className="req-label">📝 Descripción:</span>
+                      <span className="req-label">📝 {t(lang, "lbl_desc")}:</span>
                       <p>{req.description}</p>
                     </div>
                   </div>

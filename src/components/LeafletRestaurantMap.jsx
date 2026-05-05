@@ -1,13 +1,18 @@
 import React, { useEffect, useMemo, useRef } from "react";
+import { t } from "../utils/translations";
 
-// Radio en píxeles para agrupar marcadores cercanos en un clúster
+/* Radio en píxeles para agrupar marcadores cercanos en un clúster */
 const CLUSTER_PIXEL_RADIUS = 65;
 
-// Foto por defecto si un alumno no tiene foto propia
+/* Foto por defecto si un alumno no tiene foto propia */
 const DEFAULT_STUDENT_PHOTO =
   "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=60";
 
-// Máximo de fotos de alumnos a mostrar en el popup antes del contador "+N"
+/* Foto por defecto si un restaurante no tiene foto propia */
+const DEFAULT_RESTAURANT_PHOTO =
+  "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=600&q=60";
+
+/* Máximo de fotos de alumnos a mostrar en el popup antes del contador "+N" */
 const MAX_POPUP_PHOTOS = 5;
 
 /**
@@ -15,34 +20,36 @@ const MAX_POPUP_PHOTOS = 5;
  *
  * Funcionalidades:
  *  - Clustering: agrupa automáticamente los marcadores cercanos con un icono
- *    circular que muestra el número de restaurantes agrupados. Se recalcula
- *    cada vez que el usuario hace zoom.
- *  - Popup: al hacer clic en un marcador individual muestra el nombre del
- *    restaurante y las fotos de los alumnos (color = activos, b&n = anteriores).
- *    Máximo MAX_POPUP_PHOTOS fotos; si hay más, la última se sustituye por +N.
+ *    circular que muestra el número de restaurantes agrupados.
+ *  - Popup: al hacer clic en un marcador individual muestra la foto del
+ *    restaurante, dirección, teléfono, descripción y las fotos de alumnos
+ *    (color = activos, b&n = anteriores). Máximo MAX_POPUP_PHOTOS fotos.
  *
  * Props:
  *   restaurants         {Array}   - Lista de restaurantes con coordenadas en Location
  *   jobsByRestaurantId  {Object}  - Mapa { restaurantId: [ { currentJob, student } ] }
  *   forceCenter         {boolean} - Si true, centra el mapa en el primer restaurante al zoom 16
+ *   onOpenRestaurant    {Function}- Callback al pulsar "Ver ficha"
+ *   lang                {string}  - Idioma activo (es | ca | en)
  */
 export default function LeafletRestaurantMap({
   restaurants,
   jobsByRestaurantId = {},
   forceCenter = false,
-  onOpenRestaurant
+  onOpenRestaurant,
+  lang = "es"
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
-  // Guardamos la última función drawClusters para poder eliminarla al actualizar puntos
+  /* Referencia a la última función drawClusters para eliminarla al actualizar */
   const drawClustersRef = useRef(null);
-  // Referencia actualizada al callback de navegación (evita closures obsoletos)
+  /* Referencia actualizada al callback de navegación (evita closures obsoletos) */
   const onOpenRestaurantRef = useRef(onOpenRestaurant);
   useEffect(() => { onOpenRestaurantRef.current = onOpenRestaurant; }, [onOpenRestaurant]);
 
-  // Filtrar restaurantes con coordenadas válidas y añadir sus relaciones de alumnos.
-  // También incluimos dirección, teléfono y descripción para el popup del mapa.
+  /* Filtrar restaurantes con coordenadas válidas y añadir sus relaciones de alumnos,
+   * foto, dirección, teléfono y descripción para el popup del mapa. */
   const points = useMemo(
     () =>
       restaurants
@@ -50,6 +57,7 @@ export default function LeafletRestaurantMap({
         .map((r) => ({
           id: r.id,
           name: r.Name,
+          photo: r.PhotoURL || r.Photo || "",
           address: r.Address || r.Direccion || "",
           phone: r.Phone || r.Telefono || "",
           description: r.Description || r.Descripcion || "",
@@ -60,6 +68,17 @@ export default function LeafletRestaurantMap({
     [restaurants, jobsByRestaurantId]
   );
 
+  /* Strings traducidos que se pasan al generador de HTML del popup.
+   * Al cambiar el idioma se recrea el efecto porque `lang` es dependencia. */
+  const popupStrings = useMemo(() => ({
+    grouped:   t(lang, "map_grouped"),
+    zoomHint:  t(lang, "map_zoom_hint"),
+    noStudents: t(lang, "map_no_students"),
+    active:    t(lang, "map_active"),
+    former:    t(lang, "map_former"),
+    viewCard:  t(lang, "map_view_card"),
+  }), [lang]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -69,7 +88,7 @@ export default function LeafletRestaurantMap({
       const L = await loadLeaflet();
       if (cancelled || !container) return;
 
-      // Crear el mapa solo la primera vez
+      /* Crear el mapa solo la primera vez */
       if (!mapRef.current) {
         const map = L.map(container, { zoomControl: true }).setView([41.3851, 2.1734], 8);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -83,7 +102,7 @@ export default function LeafletRestaurantMap({
       const map = mapRef.current;
       const markerLayer = markerLayerRef.current;
 
-      // Eliminar el listener de zoom anterior para evitar duplicados
+      /* Eliminar el listener de zoom anterior para evitar duplicados */
       if (drawClustersRef.current) {
         map.off("zoomend", drawClustersRef.current);
       }
@@ -100,11 +119,11 @@ export default function LeafletRestaurantMap({
 
         clusters.forEach((cluster) => {
           if (cluster.length === 1) {
-            // ── Marcador individual: icono Joviat "J" + popup con info ───────
+            /* ── Marcador individual: icono Joviat "J" + popup con info ─────── */
             const point = cluster[0];
-            const popupHtml = buildSingleRestaurantPopup(point.name, point.jobs, point.id, point.address, point.phone, point.description);
+            const popupHtml = buildSingleRestaurantPopup(point, popupStrings);
 
-            // Icono de gota personalizado con la letra J de Joviat
+            /* Icono de gota personalizado con la letra J de Joviat */
             const joviatIcon = L.divIcon({
               html: `<div class="map-joviat-pin"><span class="map-joviat-pin-letter">J</span></div>`,
               className: "",
@@ -114,10 +133,10 @@ export default function LeafletRestaurantMap({
             });
 
             const marker = L.marker([point.lat, point.lng], { icon: joviatIcon });
-            const popup = L.popup({ maxWidth: 300, minWidth: 220 }).setContent(popupHtml);
+            const popup = L.popup({ maxWidth: 300, minWidth: 240 }).setContent(popupHtml);
             marker.bindPopup(popup);
 
-            // Al abrir el popup, adjuntar el handler del botón "Ver ficha"
+            /* Al abrir el popup, adjuntar el handler del botón "Ver ficha" */
             marker.on("popupopen", () => {
               const btn = popup.getElement()?.querySelector("[data-open-restaurant]");
               if (btn) {
@@ -133,27 +152,27 @@ export default function LeafletRestaurantMap({
 
             marker.addTo(markerLayer);
           } else {
-            // ── Clúster: icono circular con el número de restaurantes ────────
+            /* ── Clúster: icono circular con el número de restaurantes ──────── */
             const centerLat = cluster.reduce((sum, p) => sum + p.lat, 0) / cluster.length;
             const centerLng = cluster.reduce((sum, p) => sum + p.lng, 0) / cluster.length;
             const count = cluster.length;
 
-            // DivIcon personalizado con estilo de burbuja
+            /* DivIcon personalizado con estilo de burbuja */
             const clusterIcon = L.divIcon({
               html: `<div class="map-cluster-icon">${count}</div>`,
-              className: "", // resetear clase base de Leaflet
+              className: "",
               iconSize: [46, 46],
               iconAnchor: [23, 23]
             });
 
-            // Popup del clúster: lista de nombres + indicación de zoom
-            const namesHtml = cluster.map((p) => `<li>${p.name}</li>`).join("");
+            /* Popup del clúster: lista de nombres + indicación de zoom */
+            const namesHtml = cluster.map((p) => `<li>${escapeHtml(p.name)}</li>`).join("");
             const clusterPopup = `
               <div style="font-family:'Segoe UI',Arial,sans-serif">
-                <strong style="font-size:0.95rem">${count} restaurantes agrupados</strong>
+                <strong style="font-size:0.95rem">${count} ${escapeHtml(popupStrings.grouped)}</strong>
                 <ul style="margin:0.4rem 0 0;padding-left:1.1rem;font-size:0.85rem;color:#374151">${namesHtml}</ul>
                 <p style="font-size:0.75rem;color:#9ca3af;margin:0.5rem 0 0">
-                  Haz zoom para ver cada restaurante por separado.
+                  ${escapeHtml(popupStrings.zoomHint)}
                 </p>
               </div>
             `;
@@ -165,14 +184,14 @@ export default function LeafletRestaurantMap({
         });
       }
 
-      // Guardar referencia y suscribir al evento de zoom
+      /* Guardar referencia y suscribir al evento de zoom */
       drawClustersRef.current = drawClusters;
       map.on("zoomend", drawClusters);
 
-      // Dibujar inmediatamente
+      /* Dibujar inmediatamente */
       drawClusters();
 
-      // Ajustar la vista al conjunto de puntos
+      /* Ajustar la vista al conjunto de puntos */
       if (points.length > 0) {
         if (points.length === 1 || forceCenter) {
           map.setView([points[0].lat, points[0].lng], 16);
@@ -192,7 +211,7 @@ export default function LeafletRestaurantMap({
     return () => {
       cancelled = true;
     };
-  }, [points, forceCenter]);
+  }, [points, forceCenter, popupStrings]);
 
   return <div ref={mapContainerRef} className="map-box" aria-label="Mapa de restaurantes" />;
 }
@@ -202,13 +221,12 @@ export default function LeafletRestaurantMap({
 /**
  * Agrupa los puntos por proximidad de píxeles en el mapa actual.
  * Algoritmo greedy: los puntos se asignan al primer clúster con el que
- * se solapan. La distancia se mide en píxeles de pantalla para que el
- * comportamiento sea consistente independientemente del nivel de zoom.
+ * se solapan. La distancia se mide en píxeles de pantalla.
  *
- * @param {Array} points         - Puntos con { lat, lng, ... }
- * @param {L.Map} map            - Instancia de Leaflet
- * @param {number} pixelRadius   - Radio máximo en píxeles para agrupar
- * @returns {Array<Array>}       - Array de clústeres (cada uno es un array de puntos)
+ * @param {Array}  points       - Puntos con { lat, lng, ... }
+ * @param {L.Map}  map          - Instancia de Leaflet
+ * @param {number} pixelRadius  - Radio máximo en píxeles para agrupar
+ * @returns {Array<Array>}      - Array de clústeres
  */
 function buildClusters(points, map, pixelRadius) {
   const clusters = [];
@@ -241,25 +259,20 @@ function buildClusters(points, map, pixelRadius) {
 
 /**
  * Genera el HTML del popup de un marcador individual.
- * Muestra el nombre del restaurante y las fotos de sus alumnos:
+ * Muestra la foto del restaurante (si existe), dirección, teléfono, descripción
+ * y las fotos de los alumnos:
  *   - Alumnos actuales: foto a color con borde azul
  *   - Alumnos anteriores: foto en blanco y negro con borde gris
  *   - Máximo MAX_POPUP_PHOTOS fotos, luego un círculo "+N"
  *
- * @param {string} restaurantName - Nombre del restaurante
- * @param {Array}  jobs           - Array de { currentJob, student }
- * @returns {string}              - HTML del popup
+ * @param {Object} point         - Datos del restaurante ({ name, photo, address, phone, description, id, jobs })
+ * @param {Object} strings       - Strings traducidos ({ grouped, zoomHint, noStudents, active, former, viewCard })
+ * @returns {string}             - HTML del popup
  */
-/**
- * @param {string} restaurantName
- * @param {Array}  jobs
- * @param {string} restaurantId
- * @param {string} address      - Dirección del restaurante
- * @param {string} phone        - Teléfono del restaurante
- * @param {string} description  - Descripción del restaurante
- */
-function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId, address, phone, description) {
-  // Separar alumnos actuales y pasados (deduplificados por id)
+function buildSingleRestaurantPopup(point, strings) {
+  const { name: restaurantName, photo: restaurantPhoto, address, phone, description, id: restaurantId, jobs } = point;
+
+  /* Separar alumnos actuales y pasados (deduplificados por id) */
   const seenIds = new Set();
   const currentStudents = [];
   const pastStudents = [];
@@ -274,34 +287,45 @@ function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId, address,
     }
   }
 
-  // Combinar: primero actuales (color), luego anteriores (b&n)
+  /* Combinar: primero actuales (color), luego anteriores (b&n) */
   const allStudents = [...currentStudents, ...pastStudents];
   const visible = allStudents.slice(0, MAX_POPUP_PHOTOS);
   const remaining = allStudents.length - visible.length;
 
-  // HTML de las fotos
+  /* HTML de la foto del restaurante */
+  const photoSrc = restaurantPhoto || DEFAULT_RESTAURANT_PHOTO;
+  const restaurantPhotoHtml = `
+    <img
+      src="${escapeHtml(photoSrc)}"
+      alt="${escapeHtml(restaurantName)}"
+      style="width:100%;height:110px;object-fit:cover;border-radius:6px;display:block;margin-bottom:0.4rem"
+      onerror="this.style.display='none'"
+    />
+  `;
+
+  /* HTML de las fotos de alumnos */
   let photosHtml = "";
 
   visible.forEach((student, idx) => {
     const isPast = idx >= currentStudents.length;
     const photoUrl = student.PhotoURL || DEFAULT_STUDENT_PHOTO;
-    // Alumnos pasados: filtro de escala de grises y borde gris
+    /* Alumnos pasados: filtro de escala de grises y borde gris */
     const imgStyle = isPast
       ? "filter:grayscale(100%);border:2px solid #9ca3af;"
       : "border:2px solid #2563eb;";
 
     photosHtml += `
       <img
-        src="${photoUrl}"
+        src="${escapeHtml(photoUrl)}"
         alt="${escapeHtml(student.Name || "Alumno")}"
-        title="${escapeHtml(student.Name || "Alumno")}${isPast ? " (anterior)" : " (activo)"}"
+        title="${escapeHtml(student.Name || "Alumno")}${isPast ? ` (${strings.former})` : ` (${strings.active})`}"
         style="width:38px;height:38px;border-radius:50%;object-fit:cover;${imgStyle}margin:2px;flex-shrink:0"
         onerror="this.src='${DEFAULT_STUDENT_PHOTO}'"
       />
     `;
   });
 
-  // Círculo con el número de fotos restantes
+  /* Círculo con el número de fotos restantes */
   if (remaining > 0) {
     photosHtml += `
       <span style="
@@ -313,18 +337,18 @@ function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId, address,
     `;
   }
 
-  // Texto resumen de alumnos
+  /* Texto resumen de alumnos */
   const summaryParts = [];
-  if (currentStudents.length > 0) summaryParts.push(`${currentStudents.length} activo${currentStudents.length > 1 ? "s" : ""}`);
-  if (pastStudents.length > 0) summaryParts.push(`${pastStudents.length} anterior${pastStudents.length > 1 ? "es" : ""}`);
+  if (currentStudents.length > 0) summaryParts.push(`${currentStudents.length} ${strings.active.toLowerCase()}${currentStudents.length > 1 ? "s" : ""}`);
+  if (pastStudents.length > 0) summaryParts.push(`${pastStudents.length} ${strings.former.toLowerCase()}${pastStudents.length > 1 ? "es" : ""}`);
   const summaryText = summaryParts.join(" · ");
 
-  // Leyenda con ejemplos de color (solo si hay ambos tipos)
+  /* Leyenda con ejemplos de color (solo si hay ambos tipos) */
   const legendHtml = currentStudents.length > 0 && pastStudents.length > 0 ? `
     <p style="font-size:0.72rem;color:#6b7280;margin:0.3rem 0 0;line-height:1.4">
-      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2563eb;margin-right:3px;vertical-align:middle"></span>Activo
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2563eb;margin-right:3px;vertical-align:middle"></span>${strings.active}
       &nbsp;
-      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9ca3af;margin-right:3px;vertical-align:middle"></span>Anterior
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9ca3af;margin-right:3px;vertical-align:middle"></span>${strings.former}
     </p>
   ` : "";
 
@@ -336,9 +360,16 @@ function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId, address,
         ${legendHtml}
       </div>
     `
-    : `<p style="font-size:0.8rem;color:#9ca3af;margin:0.4rem 0 0">Sin alumnos registrados</p>`;
+    : `<p style="font-size:0.8rem;color:#9ca3af;margin:0.4rem 0 0">${strings.noStudents}</p>`;
 
-  // Botón "Ver ficha" con data-attribute para el handler React
+  /* Bloque de información del restaurante (dirección, teléfono, descripción) */
+  const infoRows = [];
+  if (address) infoRows.push(`<p style="margin:0.2rem 0;font-size:0.8rem;color:#374151">📍 ${escapeHtml(address)}</p>`);
+  if (phone) infoRows.push(`<p style="margin:0.2rem 0;font-size:0.8rem;color:#374151">📞 ${escapeHtml(phone)}</p>`);
+  if (description) infoRows.push(`<p style="margin:0.3rem 0;font-size:0.78rem;color:#6b7280;font-style:italic">${escapeHtml(description)}</p>`);
+  const infoHtml = infoRows.length > 0 ? `<div style="margin-top:0.3rem">${infoRows.join("")}</div>` : "";
+
+  /* Botón "Ver ficha" con data-attribute para el handler React */
   const viewBtnHtml = restaurantId ? `
     <button
       data-open-restaurant="${escapeHtml(restaurantId)}"
@@ -348,18 +379,12 @@ function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId, address,
         font-size:0.82rem;font-weight:600;cursor:pointer;
         font-family:'Segoe UI',Arial,sans-serif;
       "
-    >Ver ficha →</button>
+    >${escapeHtml(strings.viewCard)}</button>
   ` : "";
 
-  // Bloque de información del restaurante (dirección, teléfono, descripción)
-  const infoRows = [];
-  if (address) infoRows.push(`<p style="margin:0.2rem 0;font-size:0.8rem;color:#374151">📍 ${escapeHtml(address)}</p>`);
-  if (phone) infoRows.push(`<p style="margin:0.2rem 0;font-size:0.8rem;color:#374151">📞 ${escapeHtml(phone)}</p>`);
-  if (description) infoRows.push(`<p style="margin:0.3rem 0;font-size:0.78rem;color:#6b7280;font-style:italic">${escapeHtml(description)}</p>`);
-  const infoHtml = infoRows.length > 0 ? `<div style="margin-top:0.3rem">${infoRows.join("")}</div>` : "";
-
   return `
-    <div style="font-family:'Segoe UI',Arial,sans-serif">
+    <div style="font-family:'Segoe UI',Arial,sans-serif;min-width:220px">
+      ${restaurantPhotoHtml}
       <strong style="font-size:0.95rem;color:#111">${escapeHtml(restaurantName)}</strong>
       ${infoHtml}
       ${studentsSection}

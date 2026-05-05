@@ -49,6 +49,7 @@ export default function RestaurantesPage({
               restaurants={restaurants}
               jobsByRestaurantId={jobsByRestaurantId}
               onOpenRestaurant={onOpenRestaurant}
+              lang={lang}
             />
           </div>
         )}
@@ -90,6 +91,7 @@ export default function RestaurantesPage({
               restaurants={restaurants}
               jobsByRestaurantId={jobsByRestaurantId}
               onOpenRestaurant={onOpenRestaurant}
+              lang={lang}
             />
           </div>
         )}
