@@ -1353,11 +1353,23 @@ body {
   border-color: #666;
 }
 
-/* Botón activo del idioma seleccionado */
-.lang-btn-active {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
+/* Botón activo del idioma seleccionado — especificidad alta para ganar a .sidebar button */
+.lang-btn.lang-btn-active,
+.sidebar .lang-btn.lang-btn-active,
+.mobile-menu-float .lang-btn.lang-btn-active {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
+  font-weight: 700;
+}
+
+/* Mantener el estilo activo también en hover */
+.lang-btn.lang-btn-active:hover,
+.sidebar .lang-btn.lang-btn-active:hover,
+.mobile-menu-float .lang-btn.lang-btn-active:hover {
+  background: #e5e5e5 !important;
+  color: #000 !important;
+  border-color: #ccc !important;
 }
 
 /* Envoltorio del selector de idioma en el menú móvil */
