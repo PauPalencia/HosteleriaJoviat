@@ -41,7 +41,8 @@ export default function LeafletRestaurantMap({
   const onOpenRestaurantRef = useRef(onOpenRestaurant);
   useEffect(() => { onOpenRestaurantRef.current = onOpenRestaurant; }, [onOpenRestaurant]);
 
-  // Filtrar restaurantes con coordenadas válidas y añadir sus relaciones de alumnos
+  // Filtrar restaurantes con coordenadas válidas y añadir sus relaciones de alumnos.
+  // También incluimos dirección, teléfono y descripción para el popup del mapa.
   const points = useMemo(
     () =>
       restaurants
@@ -49,6 +50,9 @@ export default function LeafletRestaurantMap({
         .map((r) => ({
           id: r.id,
           name: r.Name,
+          address: r.Address || r.Direccion || "",
+          phone: r.Phone || r.Telefono || "",
+          description: r.Description || r.Descripcion || "",
           lat: r.Location.lat,
           lng: r.Location.lng,
           jobs: jobsByRestaurantId[r.id] || []
@@ -98,7 +102,7 @@ export default function LeafletRestaurantMap({
           if (cluster.length === 1) {
             // ── Marcador individual: icono Joviat "J" + popup con info ───────
             const point = cluster[0];
-            const popupHtml = buildSingleRestaurantPopup(point.name, point.jobs, point.id);
+            const popupHtml = buildSingleRestaurantPopup(point.name, point.jobs, point.id, point.address, point.phone, point.description);
 
             // Icono de gota personalizado con la letra J de Joviat
             const joviatIcon = L.divIcon({
@@ -246,7 +250,15 @@ function buildClusters(points, map, pixelRadius) {
  * @param {Array}  jobs           - Array de { currentJob, student }
  * @returns {string}              - HTML del popup
  */
-function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId) {
+/**
+ * @param {string} restaurantName
+ * @param {Array}  jobs
+ * @param {string} restaurantId
+ * @param {string} address      - Dirección del restaurante
+ * @param {string} phone        - Teléfono del restaurante
+ * @param {string} description  - Descripción del restaurante
+ */
+function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId, address, phone, description) {
   // Separar alumnos actuales y pasados (deduplificados por id)
   const seenIds = new Set();
   const currentStudents = [];
@@ -339,9 +351,17 @@ function buildSingleRestaurantPopup(restaurantName, jobs, restaurantId) {
     >Ver ficha →</button>
   ` : "";
 
+  // Bloque de información del restaurante (dirección, teléfono, descripción)
+  const infoRows = [];
+  if (address) infoRows.push(`<p style="margin:0.2rem 0;font-size:0.8rem;color:#374151">📍 ${escapeHtml(address)}</p>`);
+  if (phone) infoRows.push(`<p style="margin:0.2rem 0;font-size:0.8rem;color:#374151">📞 ${escapeHtml(phone)}</p>`);
+  if (description) infoRows.push(`<p style="margin:0.3rem 0;font-size:0.78rem;color:#6b7280;font-style:italic">${escapeHtml(description)}</p>`);
+  const infoHtml = infoRows.length > 0 ? `<div style="margin-top:0.3rem">${infoRows.join("")}</div>` : "";
+
   return `
     <div style="font-family:'Segoe UI',Arial,sans-serif">
       <strong style="font-size:0.95rem;color:#111">${escapeHtml(restaurantName)}</strong>
+      ${infoHtml}
       ${studentsSection}
       ${viewBtnHtml}
     </div>

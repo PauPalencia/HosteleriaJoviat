@@ -1,4 +1,5 @@
 import React from "react";
+import { t } from "../utils/translations";
 
 export default function AuthPage({
   authMode,
@@ -9,16 +10,15 @@ export default function AuthPage({
   authLoading,
   onFieldChange,
   onSubmit,
-  canUseRemoteAccounts
+  canUseRemoteAccounts,
+  lang = "es"
 }) {
   return (
     <section className="panel auth-panel">
       <div className="auth-header-block">
-        <h2>{authMode === "login" ? "Iniciar sesión" : "Solicitar acceso"}</h2>
+        <h2>{authMode === "login" ? t(lang, "auth_login_title") : t(lang, "auth_register_title")}</h2>
         <p className="auth-helper-text">
-          {authMode === "login"
-            ? "Accede con tu correo y contraseña."
-            : "Déjanos tus datos y revisaremos tu solicitud lo antes posible."}
+          {authMode === "login" ? t(lang, "auth_login_helper") : t(lang, "auth_register_helper")}
         </p>
       </div>
 
@@ -28,21 +28,19 @@ export default function AuthPage({
           className={authMode === "login" ? "active" : ""}
           onClick={() => setAuthMode("login")}
         >
-          Login
+          {t(lang, "auth_tab_login")}
         </button>
         <button
           type="button"
           className={authMode === "register" ? "active" : ""}
           onClick={() => setAuthMode("register")}
         >
-          Registro
+          {t(lang, "auth_tab_register")}
         </button>
       </div>
 
       {!canUseRemoteAccounts && (
-        <p className="warning-box">
-          No se han podido cargar las colecciones remotas. Puedes seguir entrando con cuentas guardadas en este navegador.
-        </p>
+        <p className="warning-box">{t(lang, "auth_offline_warning")}</p>
       )}
 
       {authInfo && <p className="info-box">{authInfo}</p>}
@@ -52,10 +50,10 @@ export default function AuthPage({
         {authMode === "register" && (
           <>
             <label className="auth-field">
-              <span>Nombre completo</span>
+              <span>{t(lang, "auth_name")}</span>
               <input
                 name="name"
-                placeholder="Tu nombre y apellidos"
+                placeholder={t(lang, "auth_name_placeholder")}
                 value={authForm.name}
                 onChange={onFieldChange}
                 autoComplete="name"
@@ -64,20 +62,20 @@ export default function AuthPage({
 
             <div className="auth-form-grid compact-grid">
               <label className="auth-field">
-                <span>Teléfono</span>
+                <span>{t(lang, "auth_phone")}</span>
                 <input
                   name="phone"
-                  placeholder="600 000 000"
+                  placeholder={t(lang, "auth_phone_placeholder")}
                   value={authForm.phone}
                   onChange={onFieldChange}
                   autoComplete="tel"
                 />
               </label>
               <label className="auth-field">
-                <span>Curso</span>
+                <span>{t(lang, "auth_curso")}</span>
                 <input
                   name="curso"
-                  placeholder="Ej. Cocina 2"
+                  placeholder={t(lang, "auth_curso_placeholder")}
                   value={authForm.curso}
                   onChange={onFieldChange}
                   autoComplete="organization-title"
@@ -88,11 +86,11 @@ export default function AuthPage({
         )}
 
         <label className="auth-field">
-          <span>Correo</span>
+          <span>{t(lang, "auth_email")}</span>
           <input
             name="email"
             type="email"
-            placeholder="tuemail@joviat.cat"
+            placeholder={t(lang, "auth_email_placeholder")}
             value={authForm.email}
             onChange={onFieldChange}
             autoComplete="email"
@@ -100,7 +98,7 @@ export default function AuthPage({
         </label>
 
         <label className="auth-field">
-          <span>Contraseña</span>
+          <span>{t(lang, "auth_password")}</span>
           <input
             name="password"
             type="password"
@@ -113,7 +111,7 @@ export default function AuthPage({
 
         {authMode === "register" && (
           <label className="auth-field">
-            <span>Repite la contraseña</span>
+            <span>{t(lang, "auth_confirm_password")}</span>
             <input
               name="confirmPassword"
               type="password"
@@ -126,7 +124,11 @@ export default function AuthPage({
         )}
 
         <button type="submit" className="primary-btn auth-submit-btn" disabled={authLoading}>
-          {authLoading ? "Procesando..." : authMode === "login" ? "Entrar" : "Enviar solicitud"}
+          {authLoading
+            ? t(lang, "auth_loading")
+            : authMode === "login"
+              ? t(lang, "auth_submit_login")
+              : t(lang, "auth_submit_register")}
         </button>
       </form>
     </section>

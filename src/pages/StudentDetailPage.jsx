@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getRestaurantPhoto, getStudentPhoto } from "../utils/ui";
 import { getRoleLabel, normalizeRole, ROLE_KEYS } from "../utils/models";
+import { t } from "../utils/translations";
 
 // Formulario vacío para edición de ficha de alumno
 const buildEmptyEditForm = (student) => ({
@@ -22,7 +23,8 @@ export default function StudentDetailPage({
   sessionStudentId,
   onEditStudent,
   onDeleteStudent,
-  onGoToAuth
+  onGoToAuth,
+  lang = "es"
 }) {
   // Controla si el panel de edición está visible
   const [editOpen, setEditOpen] = useState(false);
@@ -74,14 +76,14 @@ export default function StudentDetailPage({
         {canEdit && (
           <div className="detail-admin-actions">
             <button className="small-btn" onClick={handleOpenEdit}>
-              ✏️ Editar ficha
+              ✏️ {t(lang, "detail_edit")}
             </button>
             {isAdmin && (
               <button
                 className="small-btn danger-btn"
                 onClick={() => { setDeleteConfirmOpen(true); setDeleteConfirmText(""); }}
               >
-                🗑️ Eliminar ficha
+                🗑️ {t(lang, "detail_delete")}
               </button>
             )}
           </div>
@@ -93,24 +95,24 @@ export default function StudentDetailPage({
         <img src={getStudentPhoto(student)} alt={student.Name} />
         <div>
           <h2>{student.Name}</h2>
-          <p><strong>Estado:</strong> {getRoleLabel(normalizeRole(student.Status || student.status, ROLE_KEYS.STUDENT))}</p>
-          <p><strong>Curso:</strong> {student.Curso || "-"}</p>
+          <p><strong>{t(lang, "detail_status")}:</strong> {getRoleLabel(normalizeRole(student.Status || student.status, ROLE_KEYS.STUDENT))}</p>
+          <p><strong>{t(lang, "detail_curso")}:</strong> {student.Curso || "-"}</p>
 
           {/* Información de contacto: visible solo con sesión iniciada */}
           {isAuthenticated ? (
             <>
-              <p><strong>Email:</strong> {student.Email || "-"}</p>
-              <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
-              <p><strong>LinkedIn:</strong> {student.LinkedIn || "-"}</p>
+              <p><strong>{t(lang, "detail_email")}:</strong> {student.Email || "-"}</p>
+              <p><strong>{t(lang, "detail_phone")}:</strong> {student.Phone || "-"}</p>
+              <p><strong>{t(lang, "detail_linkedin")}:</strong> {student.LinkedIn || "-"}</p>
             </>
           ) : (
             <div className="contact-hidden-box">
               <span className="contact-hidden-lock">🔒</span>
               <span className="contact-hidden-text">
-                Inicia sesión para ver la información de contacto.{" "}
+                {t(lang, "contact_hidden")}{" "}
                 {onGoToAuth && (
                   <button className="link-btn" onClick={onGoToAuth}>
-                    Iniciar sesión
+                    {t(lang, "contact_hidden_link")}
                   </button>
                 )}
               </span>
@@ -120,10 +122,10 @@ export default function StudentDetailPage({
       </div>
 
       {/* Lista de restaurantes donde ha trabajado el alumno */}
-      <h3>Restaurantes en los que ha trabajado</h3>
+      <h3>{t(lang, "detail_restaurants_title")}</h3>
       <div className="student-work-list">
         {jobs.length === 0 && (
-          <p className="state-text">Este alumno no tiene restaurantes asociados.</p>
+          <p className="state-text">{t(lang, "detail_no_restaurants")}</p>
         )}
         {jobs.map((job, index) => (
           <button
@@ -145,12 +147,12 @@ export default function StudentDetailPage({
                 </div>
                 <div className="work-preview-info work-preview-info-column">
                   <p><strong>Dirección:</strong> {job.restaurant?.Address || "-"}</p>
-                  <p><strong>Email:</strong> {job.restaurant?.Email || "-"}</p>
-                  <p><strong>Teléfono:</strong> {job.restaurant?.Phone || "-"}</p>
+                  <p><strong>{t(lang, "detail_email")}:</strong> {job.restaurant?.Email || "-"}</p>
+                  <p><strong>{t(lang, "detail_phone")}:</strong> {job.restaurant?.Phone || "-"}</p>
                   <div className="badge-row">
-                    <span className="badge badge-dark">Cargo: {job.role || "Sin rol"}</span>
+                    <span className="badge badge-dark">{t(lang, "role_label")}: {job.role || "-"}</span>
                     <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
-                      {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                      {job.currentJob ? t(lang, "working_now") : t(lang, "worked_before")}
                     </span>
                   </div>
                 </div>
@@ -164,7 +166,7 @@ export default function StudentDetailPage({
                   src={buildEmbedMapUrl(job.restaurant.Location.lat, job.restaurant.Location.lng)}
                 />
               ) : (
-                <div className="map-fallback">Sin coordenadas</div>
+                <div className="map-fallback">{t(lang, "no_location")}</div>
               )}
             </div>
           </button>
@@ -175,11 +177,11 @@ export default function StudentDetailPage({
       {editOpen && (
         <div className="modal-backdrop">
           <div className="modal-box modal-box-wide">
-            <h3 className="modal-title">Editar ficha de {student.Name}</h3>
+            <h3 className="modal-title">{t(lang, "edit_title")} {student.Name}</h3>
             <form className="auth-form clean-auth-form" onSubmit={handleSaveEdit}>
 
               <label className="auth-field">
-                <span>Nombre completo</span>
+                <span>{t(lang, "edit_name")}</span>
                 <input
                   value={editForm.Name}
                   onChange={(e) => setEditForm((f) => ({ ...f, Name: e.target.value }))}
@@ -188,14 +190,14 @@ export default function StudentDetailPage({
 
               <div className="auth-form-grid compact-grid">
                 <label className="auth-field">
-                  <span>Teléfono</span>
+                  <span>{t(lang, "detail_phone")}</span>
                   <input
                     value={editForm.Phone}
                     onChange={(e) => setEditForm((f) => ({ ...f, Phone: e.target.value }))}
                   />
                 </label>
                 <label className="auth-field">
-                  <span>Curso</span>
+                  <span>{t(lang, "detail_curso")}</span>
                   <input
                     value={editForm.Curso}
                     onChange={(e) => setEditForm((f) => ({ ...f, Curso: e.target.value }))}
@@ -204,7 +206,7 @@ export default function StudentDetailPage({
               </div>
 
               <label className="auth-field">
-                <span>LinkedIn</span>
+                <span>{t(lang, "detail_linkedin")}</span>
                 <input
                   value={editForm.LinkedIn}
                   onChange={(e) => setEditForm((f) => ({ ...f, LinkedIn: e.target.value }))}
@@ -212,7 +214,7 @@ export default function StudentDetailPage({
               </label>
 
               <label className="auth-field">
-                <span>URL de foto de perfil</span>
+                <span>{t(lang, "edit_photo_url")}</span>
                 <input
                   type="url"
                   placeholder="https://ejemplo.com/foto.jpg"
@@ -234,8 +236,8 @@ export default function StudentDetailPage({
               )}
 
               <div className="modal-actions">
-                <button type="submit" className="primary-btn">Guardar cambios</button>
-                <button type="button" className="small-btn" onClick={() => setEditOpen(false)}>Cancelar</button>
+                <button type="submit" className="primary-btn">{t(lang, "edit_save")}</button>
+                <button type="button" className="small-btn" onClick={() => setEditOpen(false)}>{t(lang, "edit_cancel")}</button>
               </div>
             </form>
           </div>
@@ -246,17 +248,15 @@ export default function StudentDetailPage({
       {deleteConfirmOpen && (
         <div className="modal-backdrop">
           <div className="modal-box">
-            <h3 className="modal-title">Eliminar ficha</h3>
-            <p className="modal-text">
-              Esta acción no se puede deshacer. Para confirmar, escribe exactamente:
-            </p>
-            <p className="delete-confirm-phrase">"eliminar ficha"</p>
+            <h3 className="modal-title">{t(lang, "delete_title")}</h3>
+            <p className="modal-text">{t(lang, "delete_body")}</p>
+            <p className="delete-confirm-phrase">"{t(lang, "delete_phrase")}"</p>
             <input
               className="delete-confirm-input"
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder="eliminar ficha"
+              placeholder={t(lang, "delete_phrase")}
               autoFocus
             />
             <div className="modal-actions">
@@ -265,13 +265,13 @@ export default function StudentDetailPage({
                 onClick={handleConfirmDelete}
                 disabled={deleteConfirmText.trim().toLowerCase() !== "eliminar ficha"}
               >
-                Eliminar ficha definitivamente
+                {t(lang, "delete_confirm_btn")}
               </button>
               <button
                 className="small-btn"
                 onClick={() => { setDeleteConfirmOpen(false); setDeleteConfirmText(""); }}
               >
-                Cancelar
+                {t(lang, "edit_cancel")}
               </button>
             </div>
           </div>

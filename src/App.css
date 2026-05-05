@@ -48,10 +48,46 @@ body {
 
 .mobile-topbar { position: sticky; top: 0; z-index: 30; background: #000; color: #fff; padding: 0.8rem; }
 .mobile-topbar-head { display: flex; align-items: center; justify-content: space-between; }
-.mobile-actions { display: flex; gap: 0.5rem; }
-.mobile-menu-dropdown { display: grid; gap: 0.4rem; margin-top: 0.7rem; }
-.mobile-menu-dropdown button { border: 1px solid #444; border-radius: 10px; padding: 0.65rem; background: #111; color: #fff; text-align: left; }
-.mobile-menu-dropdown button.active { background: #fff; color: #000; }
+.mobile-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+/* Menú flotante móvil: pequeño dropdown anclado a la esquina superior derecha */
+.mobile-menu-float {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 100;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 200px;
+  max-width: 260px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+
+/* Ítems dentro del menú flotante móvil */
+.mobile-menu-float .nav-item {
+  border-radius: 8px;
+  font-size: 0.88rem;
+  padding: 0.55rem 0.75rem;
+}
+
+/* Estado activo e hover en menú flotante */
+.mobile-menu-float .nav-item.active,
+.mobile-menu-float .nav-item:hover {
+  background: #fff;
+  color: #000;
+}
+
+/* Selector de idioma en el menú flotante móvil */
+.mobile-menu-float .mobile-lang-wrap {
+  padding-top: 0.4rem;
+  border-top: 1px solid #2a2a2a;
+  margin-top: 0.2rem;
+}
 
 .content { padding: 1.2rem; }
 .panel { background: #fff; border: 1px solid #d1d5db; border-radius: 14px; padding: 1rem; }

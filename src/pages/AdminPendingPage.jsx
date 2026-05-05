@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { getStudentPhoto } from "../utils/ui";
-
-// Pestañas disponibles en el panel de solicitudes
-const TABS = [
-  { key: "students", label: "Solicitudes de alumnos" },
-  { key: "restaurants", label: "Solicitudes de restaurante" },
-];
+import { t } from "../utils/translations";
 
 export default function AdminPendingPage({
   pendingStudents,
@@ -14,14 +9,21 @@ export default function AdminPendingPage({
   onRemove,
   onApproveRestaurantRequest,
   onRemoveRestaurantRequest,
-  pendingActionId
+  pendingActionId,
+  lang = "es"
 }) {
   // Pestaña activa: "students" por defecto
   const [activeTab, setActiveTab] = useState("students");
 
+  // Pestañas con etiquetas traducidas
+  const TABS = [
+    { key: "students", label: t(lang, "admin_tab_students") },
+    { key: "restaurants", label: t(lang, "admin_tab_restaurants") },
+  ];
+
   return (
     <section className="panel">
-      <h2>Gestión de solicitudes</h2>
+      <h2>{t(lang, "admin_pending_title")}</h2>
 
       {/* ── Selector de pestañas ─────────────────────────────────────────── */}
       <div className="pending-tabs">
@@ -52,7 +54,7 @@ export default function AdminPendingPage({
           </p>
 
           {pendingStudents.length === 0 ? (
-            <p className="state-text">No hay solicitudes de acceso pendientes.</p>
+            <p className="state-text">{t(lang, "admin_no_pending_students")}</p>
           ) : (
             <div className="spaced-list">
               {pendingStudents.map((student) => {
@@ -63,9 +65,9 @@ export default function AdminPendingPage({
                       <img src={getStudentPhoto(student)} alt={student.Name} />
                       <div>
                         <h3>{student.Name}</h3>
-                        <p><strong>Correo:</strong> {student.Email}</p>
-                        <p><strong>Teléfono:</strong> {student.Phone || "-"}</p>
-                        <p><strong>Curso:</strong> {student.Curso || "-"}</p>
+                        <p><strong>{t(lang, "detail_email")}:</strong> {student.Email}</p>
+                        <p><strong>{t(lang, "detail_phone")}:</strong> {student.Phone || "-"}</p>
+                        <p><strong>{t(lang, "detail_curso")}:</strong> {student.Curso || "-"}</p>
                       </div>
                     </div>
                     <div className="admin-review-actions">
@@ -75,7 +77,7 @@ export default function AdminPendingPage({
                         onClick={() => onApprove(student.id)}
                         disabled={isBusy}
                       >
-                        {isBusy ? "Aceptando..." : "✅ Aceptar alumno"}
+                        {isBusy ? t(lang, "admin_accepting") : t(lang, "admin_accept")}
                       </button>
                       <button
                         type="button"
@@ -83,7 +85,7 @@ export default function AdminPendingPage({
                         onClick={() => onRemove(student.id)}
                         disabled={isBusy}
                       >
-                        🗑️ Eliminar solicitud
+                        {t(lang, "admin_remove")}
                       </button>
                     </div>
                   </article>
@@ -103,7 +105,7 @@ export default function AdminPendingPage({
           </p>
 
           {restaurantRequests.length === 0 ? (
-            <p className="state-text">No hay solicitudes de restaurante pendientes.</p>
+            <p className="state-text">{t(lang, "admin_no_pending_rests")}</p>
           ) : (
             <div className="spaced-list">
               {restaurantRequests.map((req) => (
@@ -114,11 +116,11 @@ export default function AdminPendingPage({
                   <div className="restaurant-request-body">
                     {/* Datos del alumno que hizo la solicitud */}
                     <div className="restaurant-request-meta">
-                      <span className="req-label">👤 Alumno:</span>
+                      <span className="req-label">👤 {t(lang, "nav_alumnos")}:</span>
                       <span>{req.studentName || "—"}</span>
                     </div>
                     <div className="restaurant-request-meta">
-                      <span className="req-label">✉️ Correo:</span>
+                      <span className="req-label">✉️ {t(lang, "detail_email")}:</span>
                       <span>{req.studentEmail || "—"}</span>
                     </div>
                     <div className="restaurant-request-meta">
@@ -140,14 +142,14 @@ export default function AdminPendingPage({
                       className="primary-btn"
                       onClick={() => onApproveRestaurantRequest(req.id)}
                     >
-                      ✅ Marcar como revisada
+                      {t(lang, "admin_mark_reviewed")}
                     </button>
                     <button
                       type="button"
                       className="small-btn danger-btn"
                       onClick={() => onRemoveRestaurantRequest(req.id)}
                     >
-                      🗑️ Rechazar solicitud
+                      {t(lang, "admin_reject")}
                     </button>
                   </div>
                 </article>

@@ -18,6 +18,7 @@ import { addFirestoreDocument, loadFirestoreData } from "./utils/firestore";
 import { buildViewModel, normalizeRole, ROLE_KEYS } from "./utils/models";
 import { getStudentPhoto } from "./utils/ui";
 import { createFirebaseAuthUser } from "./utils/firebaseAuth";
+import { t } from "./utils/translations";
 
 const EMPTY_AUTH_FORM = {
   name: "",
@@ -214,6 +215,7 @@ function App() {
             students={filteredStudents}
             studentSummaryById={vm.studentSummaryById}
             onOpenStudent={setSelectedStudentId}
+            lang={lang}
           />
         )}
 
@@ -223,11 +225,7 @@ function App() {
             student={selectedStudent}
             jobs={vm.jobsByStudentId[selectedStudent.id] || []}
             onBack={handleBackFromStudentDetail}
-            backLabel={
-              navStack.at(-1)?.section === "restaurantes"
-                ? "← Volver al restaurante"
-                : "← Volver a alumnos"
-            }
+            backLabel={t(lang, "detail_back")}
             onOpenRestaurant={handleOpenRestaurantFromStudent}
             isAdmin={isAdmin}
             isAuthenticated={Boolean(session)}
@@ -235,6 +233,7 @@ function App() {
             onEditStudent={handleEditStudent}
             onDeleteStudent={handleDeleteStudent}
             onGoToAuth={() => handleSectionChange("auth")}
+            lang={lang}
           />
         )}
 
@@ -250,6 +249,7 @@ function App() {
             jobsByRestaurantId={vm.jobsByRestaurantId}
             isMobile={isMobile}
             onOpenRestaurant={setSelectedRestaurantId}
+            lang={lang}
           />
         )}
 
@@ -260,12 +260,9 @@ function App() {
             jobs={vm.jobsByRestaurantId[selectedRestaurant.id] || []}
             studentSummaryById={vm.studentSummaryById}
             onBack={handleBackFromRestaurantDetail}
-            backLabel={
-              navStack.at(-1)?.section === "alumnos"
-                ? "← Volver al alumno"
-                : "← Volver a restaurantes"
-            }
+            backLabel={t(lang, "detail_back")}
             onOpenStudent={handleOpenStudentFromRestaurant}
+            lang={lang}
           />
         )}
 
@@ -280,6 +277,7 @@ function App() {
             onFieldChange={handleAuthFieldChange}
             onSubmit={handleAuthSubmit}
             canUseRemoteAccounts={!error}
+            lang={lang}
           />
         )}
 
@@ -297,6 +295,7 @@ function App() {
             studentJobs={sessionStudent ? (vm.jobsByStudentId[sessionStudent.id] || []) : []}
             onAddRelation={handleAddStudentRelation}
             onRequestRestaurant={handleAddRestaurantRequest}
+            lang={lang}
           />
         )}
 
@@ -310,6 +309,7 @@ function App() {
             onApproveRestaurantRequest={handleApproveRestaurantRequest}
             onRemoveRestaurantRequest={handleRemoveRestaurantRequest}
             pendingActionId={pendingActionId}
+            lang={lang}
           />
         )}
 
@@ -380,14 +380,14 @@ function App() {
       {logoutConfirmOpen && (
         <div className="modal-backdrop">
           <div className="modal-box">
-            <h3 className="modal-title">Cerrar sesión</h3>
-            <p className="modal-text">¿Seguro que quieres cerrar sesión?</p>
+            <h3 className="modal-title">{t(lang, "logout_title")}</h3>
+            <p className="modal-text">{t(lang, "logout_body")}</p>
             <div className="modal-actions">
               <button className="primary-btn" onClick={handleConfirmLogout}>
-                Sí, cerrar sesión
+                {t(lang, "logout_confirm")}
               </button>
               <button className="small-btn" onClick={() => setLogoutConfirmOpen(false)}>
-                Cancelar
+                {t(lang, "logout_cancel")}
               </button>
             </div>
           </div>

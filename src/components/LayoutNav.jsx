@@ -106,7 +106,9 @@ export default function LayoutNav({
       <header className="mobile-topbar">
         <div className="mobile-topbar-head">
           <strong className="topbar-brand">JOVIAT</strong>
-          <div className="mobile-actions">
+
+          {/* Controles del lado derecho: perfil + hamburguesa */}
+          <div className="mobile-actions" style={{ position: "relative" }}>
             <button
               className="icon-btn"
               onClick={() => { onProfile(); setOpen(false); }}
@@ -114,42 +116,46 @@ export default function LayoutNav({
             >
               <UserCircleIcon size={18} />
             </button>
-            <button
-              className="icon-btn"
-              onClick={() => setOpen((v) => !v)}
-              aria-label="Abrir menú"
-            >
-              ☰
-            </button>
+
+            <div style={{ position: "relative" }}>
+              <button
+                className="icon-btn"
+                onClick={() => setOpen((v) => !v)}
+                aria-label="Abrir menú"
+              >
+                ☰
+              </button>
+
+              {/* Menú flotante pequeño anclado al botón hamburguesa */}
+              {open && (
+                <nav className="mobile-menu-float">
+                  {items.map((item) => (
+                    <NavItem
+                      key={item.key}
+                      itemKey={item.key}
+                      onClick={() => { onNavigate(item.key); setOpen(false); }}
+                    />
+                  ))}
+
+                  {isAuthenticated && (
+                    <button
+                      className="danger-logout-btn nav-item"
+                      onClick={() => { onLogout(); setOpen(false); }}
+                    >
+                      <span className="nav-icon"><LogOutIcon size={18} /></span>
+                      <span className="nav-label">{t(lang, "nav_logout")}</span>
+                    </button>
+                  )}
+
+                  {/* Selector de idioma al final del menú flotante */}
+                  <div className="mobile-lang-wrap">
+                    <LangSelector />
+                  </div>
+                </nav>
+              )}
+            </div>
           </div>
         </div>
-
-        {open && (
-          <nav className="mobile-menu-dropdown mobile-menu-shell">
-            {items.map((item) => (
-              <NavItem
-                key={item.key}
-                itemKey={item.key}
-                onClick={() => { onNavigate(item.key); setOpen(false); }}
-              />
-            ))}
-
-            {isAuthenticated && (
-              <button
-                className="danger-logout-btn nav-item"
-                onClick={() => { onLogout(); setOpen(false); }}
-              >
-                <span className="nav-icon"><LogOutIcon size={18} /></span>
-                <span className="nav-label">{t(lang, "nav_logout")}</span>
-              </button>
-            )}
-
-            {/* Selector de idioma en menú móvil */}
-            <div className="mobile-lang-wrap">
-              <LangSelector />
-            </div>
-          </nav>
-        )}
       </header>
     );
   }
