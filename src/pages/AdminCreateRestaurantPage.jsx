@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePlacesAutocomplete } from "../hooks/usePlacesAutocomplete";
+import { t } from "../utils/translations";
 
-// Valores vacíos del formulario de creación de restaurante
+/* Valores vacíos del formulario */
 const EMPTY_FORM = {
   name: "",
   address: "",
@@ -12,13 +13,13 @@ const EMPTY_FORM = {
   lng: ""
 };
 
-export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmitting }) {
+export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmitting, lang = "es" }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
-  // Ref del contenedor del buscador (para detectar clics fuera y cerrar el dropdown)
+  /* Ref del contenedor del buscador (para detectar clics fuera y cerrar el dropdown) */
   const searchWrapRef = useRef(null);
 
-  // Hook de autocompletado: devuelve predicciones y funciones para interactuar
+  /* Hook de autocompletado: devuelve predicciones y funciones para interactuar */
   const {
     query,
     predictions,
@@ -28,7 +29,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
     selectPrediction,
     clearPredictions
   } = usePlacesAutocomplete((placeData) => {
-    // Cuando el usuario selecciona un lugar, rellenar los campos del formulario
+    /* Cuando el usuario selecciona un lugar, rellenar los campos del formulario */
     setForm((current) => ({
       ...current,
       name:    placeData.name    || current.name,
@@ -39,7 +40,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
     }));
   });
 
-  // Cerrar el dropdown si el usuario hace clic fuera del buscador
+  /* Cerrar el dropdown si el usuario hace clic fuera del buscador */
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchWrapRef.current && !searchWrapRef.current.contains(event.target)) {
@@ -52,12 +53,10 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
 
   return (
     <section className="panel">
-      <h2>Crear restaurantes</h2>
-      <p className="section-helper-text">
-        Añade nuevos restaurantes. Usa el buscador de Google para autocompletar la información.
-      </p>
+      <h2>{t(lang, "cr_title")}</h2>
+      <p className="section-helper-text">{t(lang, "cr_helper")}</p>
 
-      {/* ── Buscador de Google Places con dropdown personalizado ──────────────── */}
+      {/* ── Buscador de Google Places con dropdown personalizado ─────────────── */}
       <div className="places-search-wrap" ref={searchWrapRef}>
         <div className="places-search-field">
           {/* Icono de búsqueda */}
@@ -66,7 +65,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
           <input
             type="text"
             className="places-search-input"
-            placeholder={ready ? "Escribe el nombre del restaurante..." : "Cargando buscador de Google Maps..."}
+            placeholder={ready ? t(lang, "cr_search_ready") : t(lang, "cr_search_loading")}
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
             disabled={!ready}
@@ -90,9 +89,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         </div>
 
         {/* Texto de ayuda bajo el buscador */}
-        <p className="places-search-hint">
-          Escribe el nombre y selecciona el resultado para autocompletar dirección, teléfono y coordenadas.
-        </p>
+        <p className="places-search-hint">{t(lang, "cr_search_hint")}</p>
 
         {/* Dropdown de predicciones */}
         {predictions.length > 0 && (
@@ -103,7 +100,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
                 className="places-dropdown-item"
                 role="option"
                 aria-selected={false}
-                // onMouseDown en vez de onClick para que se ejecute antes de onBlur
+                /* onMouseDown en vez de onClick para que se ejecute antes de onBlur */
                 onMouseDown={() => selectPrediction(prediction)}
               >
                 {/* Nombre principal del lugar */}
@@ -122,7 +119,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         )}
       </div>
 
-      {/* ── Formulario manual (editable) ────────────────────────────────────── */}
+      {/* ── Formulario manual (editable) ─────────────────────────────────────── */}
       <form
         className="auth-form clean-auth-form"
         onSubmit={(event) => {
@@ -132,7 +129,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         }}
       >
         <label className="auth-field">
-          <span>Nombre <strong>*</strong></span>
+          <span>{t(lang, "field_name")} <strong>*</strong></span>
           <input
             value={form.name}
             onChange={(e) => updateField(setForm, "name", e.target.value)}
@@ -141,7 +138,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         </label>
 
         <label className="auth-field">
-          <span>Dirección <strong>*</strong></span>
+          <span>{t(lang, "field_address")} <strong>*</strong></span>
           <input
             value={form.address}
             onChange={(e) => updateField(setForm, "address", e.target.value)}
@@ -151,7 +148,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
 
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Email <small className="optional-label">(opcional)</small></span>
+            <span>{t(lang, "field_email")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
             <input
               type="email"
               value={form.email}
@@ -159,7 +156,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
             />
           </label>
           <label className="auth-field">
-            <span>Teléfono <small className="optional-label">(opcional)</small></span>
+            <span>{t(lang, "field_phone")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
             <input
               value={form.phone}
               onChange={(e) => updateField(setForm, "phone", e.target.value)}
@@ -169,7 +166,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
 
         {/* URL de la foto del restaurante con previsualización */}
         <label className="auth-field">
-          <span>URL de foto del restaurante <small className="optional-label">(opcional)</small></span>
+          <span>{t(lang, "field_photo_rest")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
           <input
             type="url"
             placeholder="https://ejemplo.com/foto-restaurante.jpg"
@@ -192,7 +189,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         {/* Coordenadas (se rellenan automáticamente desde Google Places) */}
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Latitud <strong>*</strong></span>
+            <span>{t(lang, "field_lat")} <strong>*</strong></span>
             <input
               value={form.lat}
               onChange={(e) => updateField(setForm, "lat", e.target.value)}
@@ -200,7 +197,7 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
             />
           </label>
           <label className="auth-field">
-            <span>Longitud <strong>*</strong></span>
+            <span>{t(lang, "field_lng")} <strong>*</strong></span>
             <input
               value={form.lng}
               onChange={(e) => updateField(setForm, "lng", e.target.value)}
@@ -210,14 +207,14 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
         </div>
 
         <button type="submit" className="primary-btn auth-submit-btn" disabled={isSubmitting}>
-          {isSubmitting ? "Creando..." : "Crear restaurante"}
+          {isSubmitting ? t(lang, "cr_submitting") : t(lang, "cr_submit")}
         </button>
       </form>
     </section>
   );
 }
 
-// Actualiza un campo del formulario por clave
+/* Actualiza un campo del formulario por clave */
 function updateField(setForm, key, value) {
   setForm((current) => ({ ...current, [key]: value }));
 }

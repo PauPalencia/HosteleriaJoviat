@@ -1,4 +1,5 @@
 import React from "react";
+import { t } from "../utils/translations";
 
 export default function AdminManagementPage({
   currentAdministrator,
@@ -7,22 +8,21 @@ export default function AdminManagementPage({
   approvedStudents,
   totalStudents,
   totalRestaurants,
-  onNavigate
+  onNavigate,
+  lang = "es"
 }) {
   return (
     <section className="panel">
-      <h2>Administradores</h2>
-      <p className="section-helper-text">
-        Resumen rápido de la administración. Haz clic en cualquier recuadro para acceder a esa sección.
-      </p>
+      <h2>{t(lang, "mgmt_title")}</h2>
+      <p className="section-helper-text">{t(lang, "mgmt_helper")}</p>
 
       {/* Tarjetas de estadísticas — las clicables navegan a su sección */}
       <div className="card-grid admin-stats-grid">
 
         {/* Administrador actual (informativo, sin navegación) */}
         <article className="panel admin-stat-card">
-          <strong>Administrador actual</strong>
-          <p>{currentAdministrator?.Name || currentAdministrator?.Email || "Sin identificar"}</p>
+          <strong>{t(lang, "mgmt_current_admin")}</strong>
+          <p>{currentAdministrator?.Name || currentAdministrator?.Email || t(lang, "mgmt_unknown_admin")}</p>
         </article>
 
         {/* Solicitudes pendientes → va a la página de pendientes */}
@@ -30,11 +30,11 @@ export default function AdminManagementPage({
           type="button"
           className="panel admin-stat-card admin-stat-card-btn"
           onClick={() => onNavigate("admin-pendientes")}
-          title="Ver solicitudes pendientes"
+          title={t(lang, "mgmt_pending_card")}
         >
-          <strong>Solicitudes pendientes</strong>
+          <strong>{t(lang, "mgmt_pending_card")}</strong>
           <p className="admin-stat-number">{pendingStudents.length}</p>
-          <span className="admin-stat-hint">Ver solicitudes →</span>
+          <span className="admin-stat-hint">{t(lang, "mgmt_see_requests")}</span>
         </button>
 
         {/* Altas aprobadas → va a la página de aprobados */}
@@ -42,11 +42,11 @@ export default function AdminManagementPage({
           type="button"
           className="panel admin-stat-card admin-stat-card-btn"
           onClick={() => onNavigate("admin-aprobados")}
-          title="Ver solicitudes aprobadas"
+          title={t(lang, "mgmt_approved_card")}
         >
-          <strong>Altas aprobadas</strong>
+          <strong>{t(lang, "mgmt_approved_card")}</strong>
           <p className="admin-stat-number">{approvedStudents.length}</p>
-          <span className="admin-stat-hint">Ver aprobados →</span>
+          <span className="admin-stat-hint">{t(lang, "mgmt_see_approved")}</span>
         </button>
 
         {/* Total de alumnos → va al listado de alumnos */}
@@ -54,11 +54,11 @@ export default function AdminManagementPage({
           type="button"
           className="panel admin-stat-card admin-stat-card-btn"
           onClick={() => onNavigate("alumnos")}
-          title="Ir a alumnos"
+          title={t(lang, "mgmt_students_card")}
         >
-          <strong>Alumnos visibles</strong>
+          <strong>{t(lang, "mgmt_students_card")}</strong>
           <p className="admin-stat-number">{totalStudents}</p>
-          <span className="admin-stat-hint">Ver alumnos →</span>
+          <span className="admin-stat-hint">{t(lang, "mgmt_see_students")}</span>
         </button>
 
         {/* Total de restaurantes → va al listado de restaurantes */}
@@ -66,24 +66,23 @@ export default function AdminManagementPage({
           type="button"
           className="panel admin-stat-card admin-stat-card-btn"
           onClick={() => onNavigate("restaurantes")}
-          title="Ir a restaurantes"
+          title={t(lang, "mgmt_restaurants_card")}
         >
-          <strong>Restaurantes</strong>
+          <strong>{t(lang, "mgmt_restaurants_card")}</strong>
           <p className="admin-stat-number">{totalRestaurants}</p>
-          <span className="admin-stat-hint">Ver restaurantes →</span>
+          <span className="admin-stat-hint">{t(lang, "mgmt_see_restaurants")}</span>
         </button>
 
       </div>
 
       {/* Lista de administradores registrados */}
-      <h3>Administradores registrados</h3>
+      <h3>{t(lang, "mgmt_admins_title")}</h3>
       <div className="spaced-list">
         {administrators.map((administrator) => (
           <article key={administrator.id} className="admin-review-card compact-admin-card">
             <h3>{administrator.Name || administrator.Email || administrator.id}</h3>
-            <p><strong>Email:</strong> {administrator.Email || "-"}</p>
-            <p><strong>Teléfono:</strong> {administrator.Phone || "-"}</p>
-            <p><strong>ID:</strong> {administrator.id}</p>
+            <p><strong>{t(lang, "field_email")}:</strong> {administrator.Email || "-"}</p>
+            <p><strong>{t(lang, "field_phone")}:</strong> {administrator.Phone || "-"}</p>
           </article>
         ))}
       </div>

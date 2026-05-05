@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { getRestaurantPhoto } from "../utils/ui";
+import { t } from "../utils/translations";
 
 export default function ProfilePage({
   profile,
@@ -9,13 +10,14 @@ export default function ProfilePage({
   onGoToAuth,
   sessionStudent,
   onUpdateProfile,
-  // Nuevas props para gestión de experiencias laborales (solo alumnos)
+  /* Nuevas props para gestión de experiencias laborales (solo alumnos) */
   allRestaurants = [],
   studentJobs = [],
   onAddRelation,
-  onRequestRestaurant
+  onRequestRestaurant,
+  lang = "es"
 }) {
-  // ── Estado del modal de edición de perfil ────────────────────────────────
+  /* ── Estado del modal de edición de perfil ────────────────────────────────── */
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     Name: "",
@@ -26,22 +28,22 @@ export default function ProfilePage({
   });
   const [saved, setSaved] = useState(false);
 
-  // ── Estado del modal de añadir experiencia laboral ───────────────────────
+  /* ── Estado del modal de añadir experiencia laboral ──────────────────────── */
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [jobForm, setJobForm] = useState({ restaurantId: "", role: "", currentJob: false });
   const [jobSaved, setJobSaved] = useState(false);
 
-  // ── Estado del modal de solicitar restaurante ────────────────────────────
+  /* ── Estado del modal de solicitar restaurante ───────────────────────────── */
   const [requestOpen, setRequestOpen] = useState(false);
   const [requestDesc, setRequestDesc] = useState("");
   const [requestSent, setRequestSent] = useState(false);
 
-  // Un alumno puede editar su perfil y gestionar sus experiencias
+  /* Un alumno puede editar su perfil y gestionar sus experiencias */
   const canEdit = isAuthenticated && (isAdmin || sessionStudent || sessionIsStudent);
-  // Solo alumnos (no admins) pueden añadir restaurantes a su perfil
+  /* Solo alumnos (no admins) pueden añadir restaurantes a su perfil */
   const canManageJobs = isAuthenticated && sessionIsStudent && !isAdmin && onAddRelation;
 
-  // ── Handlers de edición de perfil ───────────────────────────────────────
+  /* ── Handlers de edición de perfil ──────────────────────────────────────── */
 
   function handleOpenEdit() {
     setEditForm({
@@ -68,16 +70,16 @@ export default function ProfilePage({
     setEditOpen(false);
   }
 
-  // ── Handlers de experiencia laboral ─────────────────────────────────────
+  /* ── Handlers de experiencia laboral ─────────────────────────────────────── */
 
-  // Abre el modal de añadir restaurante reiniciando el formulario
+  /* Abre el modal de añadir restaurante reiniciando el formulario */
   function handleOpenAddJob() {
     setJobForm({ restaurantId: allRestaurants[0]?.id || "", role: "", currentJob: false });
     setJobSaved(false);
     setAddJobOpen(true);
   }
 
-  // Guarda la nueva relación alumno-restaurante
+  /* Guarda la nueva relación alumno-restaurante */
   function handleSaveJob(event) {
     event.preventDefault();
     if (!jobForm.restaurantId) return;
@@ -86,7 +88,7 @@ export default function ProfilePage({
     setAddJobOpen(false);
   }
 
-  // ── Handlers de solicitud de restaurante ────────────────────────────────
+  /* ── Handlers de solicitud de restaurante ────────────────────────────────── */
 
   function handleOpenRequest() {
     setRequestDesc("");
@@ -102,15 +104,15 @@ export default function ProfilePage({
     setRequestOpen(false);
   }
 
-  // ── Pantalla sin sesión ──────────────────────────────────────────────────
+  /* ── Pantalla sin sesión ─────────────────────────────────────────────────── */
   if (!isAuthenticated) {
     return (
       <section className="panel">
         <div className="profile-logo">JOVIAT</div>
-        <h2>Perfil</h2>
-        <p>Necesitas iniciar sesión para ver datos personales.</p>
+        <h2>{t(lang, "prof_title")}</h2>
+        <p>{t(lang, "prof_not_auth")}</p>
         <button type="button" className="primary-btn" onClick={onGoToAuth}>
-          Ir a login / registro
+          {t(lang, "prof_go_auth")}
         </button>
       </section>
     );
@@ -120,32 +122,32 @@ export default function ProfilePage({
     <section className="panel">
       <div className="profile-logo">JOVIAT</div>
 
-      {/* ── Cabecera con botón de edición ─────────────────────────────────── */}
+      {/* ── Cabecera con botón de edición ──────────────────────────────────── */}
       <div className="profile-header-row">
-        <h2>Mi perfil</h2>
+        <h2>{t(lang, "prof_title")}</h2>
         {canEdit && (
           <button className="small-btn" onClick={handleOpenEdit}>
-            ✏️ Editar mi perfil
+            ✏️ {t(lang, "prof_edit_btn")}
           </button>
         )}
       </div>
 
       {/* Confirmación de guardado */}
-      {saved && <p className="info-box">Perfil actualizado correctamente.</p>}
-      {jobSaved && <p className="info-box">Restaurante añadido a tu perfil.</p>}
-      {requestSent && <p className="info-box">Solicitud enviada al administrador.</p>}
+      {saved && <p className="info-box">{t(lang, "prof_saved")}</p>}
+      {jobSaved && <p className="info-box">{t(lang, "prof_job_saved")}</p>}
+      {requestSent && <p className="info-box">{t(lang, "prof_req_sent")}</p>}
 
       {/* ── Tarjeta de datos del perfil ───────────────────────────────────── */}
       <div className="profile-card">
         <img src={profile.photo} alt={profile.name} />
         <div>
-          <p><strong>Nombre:</strong> {profile.name}</p>
-          <p><strong>Email:</strong> {profile.email}</p>
-          <p><strong>Estado:</strong> {profile.role}</p>
+          <p><strong>{t(lang, "prof_field_name")}:</strong> {profile.name}</p>
+          <p><strong>{t(lang, "field_email")}:</strong> {profile.email}</p>
+          <p><strong>{t(lang, "prof_field_status")}:</strong> {profile.role}</p>
           {!isAdmin && (
             <>
-              <p><strong>Curso:</strong> {profile.curso}</p>
-              <p><strong>Teléfono:</strong> {profile.phone}</p>
+              <p><strong>{t(lang, "field_curso")}:</strong> {profile.curso}</p>
+              <p><strong>{t(lang, "field_phone")}:</strong> {profile.phone}</p>
             </>
           )}
           {profile.linkedIn && (
@@ -154,20 +156,20 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {/* ── Sección de experiencias laborales (solo alumnos) ─────────────── */}
+      {/* ── Sección de experiencias laborales (solo alumnos) ──────────────── */}
       {canManageJobs && (
         <div className="profile-jobs-section">
           <div className="profile-section-header">
-            <h3>🍽️ Mis experiencias laborales</h3>
+            <h3>🍽️ {t(lang, "prof_jobs_title")}</h3>
             <button className="small-btn accent-btn" onClick={handleOpenAddJob}>
-              + Añadir restaurante
+              {t(lang, "prof_add_rest_btn")}
             </button>
           </div>
 
           {/* Lista de restaurantes donde trabaja/trabajó el alumno */}
           {studentJobs.length === 0 ? (
             <p className="state-text profile-jobs-empty">
-              Todavía no tienes restaurantes añadidos a tu perfil.
+              {t(lang, "prof_jobs_empty")}
             </p>
           ) : (
             <div className="profile-jobs-list">
@@ -183,10 +185,10 @@ export default function ProfilePage({
                     <p className="profile-job-detail">{job.restaurant?.Address || ""}</p>
                     <div className="badge-row">
                       {job.role && (
-                        <span className="badge badge-dark">Cargo: {job.role}</span>
+                        <span className="badge badge-dark">{t(lang, "role_label")}: {job.role}</span>
                       )}
                       <span className={`badge ${job.currentJob ? "badge-green" : "badge-gray"}`}>
-                        {job.currentJob ? "Trabajando actualmente" : "Trabajó antes"}
+                        {job.currentJob ? t(lang, "working_now") : t(lang, "worked_before")}
                       </span>
                     </div>
                   </div>
@@ -197,25 +199,25 @@ export default function ProfilePage({
 
           {/* Botón para solicitar que el administrador añada un restaurante */}
           <div className="profile-request-hint">
-            <span>¿No encuentras tu restaurante en la lista?</span>
+            <span>{t(lang, "prof_not_found_q")}</span>
             <button className="link-btn" onClick={handleOpenRequest}>
-              Solicita que lo añadan →
+              {t(lang, "prof_request_link")}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Modal: editar perfil ──────────────────────────────────────────── */}
+      {/* ── Modal: editar perfil ───────────────────────────────────────────── */}
       {editOpen && (
         <div className="modal-backdrop">
           <div className="modal-box modal-box-wide">
             <h3 className="modal-title">
-              {isAdmin ? "Editar perfil de administrador" : "Editar mi ficha"}
+              {isAdmin ? t(lang, "prof_edit_admin_title") : t(lang, "prof_edit_my_title")}
             </h3>
             <form className="auth-form clean-auth-form" onSubmit={handleSave}>
 
               <label className="auth-field">
-                <span>Nombre completo</span>
+                <span>{t(lang, "edit_name")}</span>
                 <input
                   value={editForm.Name}
                   onChange={(e) => setEditForm((f) => ({ ...f, Name: e.target.value }))}
@@ -227,14 +229,14 @@ export default function ProfilePage({
                 <>
                   <div className="auth-form-grid compact-grid">
                     <label className="auth-field">
-                      <span>Teléfono</span>
+                      <span>{t(lang, "field_phone")}</span>
                       <input
                         value={editForm.Phone}
                         onChange={(e) => setEditForm((f) => ({ ...f, Phone: e.target.value }))}
                       />
                     </label>
                     <label className="auth-field">
-                      <span>Curso</span>
+                      <span>{t(lang, "field_curso")}</span>
                       <input
                         value={editForm.Curso}
                         onChange={(e) => setEditForm((f) => ({ ...f, Curso: e.target.value }))}
@@ -253,7 +255,7 @@ export default function ProfilePage({
               )}
 
               <label className="auth-field">
-                <span>URL de foto de perfil <small className="optional-label">(opcional)</small></span>
+                <span>{t(lang, "field_photo_url")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
                 <input
                   type="url"
                   placeholder="https://ejemplo.com/foto.jpg"
@@ -274,9 +276,9 @@ export default function ProfilePage({
               )}
 
               <div className="modal-actions">
-                <button type="submit" className="primary-btn">Guardar cambios</button>
+                <button type="submit" className="primary-btn">{t(lang, "edit_save")}</button>
                 <button type="button" className="small-btn" onClick={() => setEditOpen(false)}>
-                  Cancelar
+                  {t(lang, "edit_cancel")}
                 </button>
               </div>
             </form>
@@ -284,19 +286,19 @@ export default function ProfilePage({
         </div>
       )}
 
-      {/* ── Modal: añadir restaurante al perfil ───────────────────────────── */}
+      {/* ── Modal: añadir restaurante al perfil ────────────────────────────── */}
       {addJobOpen && (
         <div className="modal-backdrop">
           <div className="modal-box modal-box-wide">
-            <h3 className="modal-title">Añadir experiencia laboral</h3>
+            <h3 className="modal-title">{t(lang, "prof_add_job_title")}</h3>
 
             {allRestaurants.length === 0 ? (
               <>
-                <p className="modal-text">No hay restaurantes disponibles en la base de datos.</p>
+                <p className="modal-text">{t(lang, "prof_no_rests")}</p>
                 <div className="modal-actions">
-                  <button className="small-btn" onClick={() => setAddJobOpen(false)}>Cerrar</button>
+                  <button className="small-btn" onClick={() => setAddJobOpen(false)}>{t(lang, "prof_close")}</button>
                   <button className="link-btn" onClick={() => { setAddJobOpen(false); handleOpenRequest(); }}>
-                    Solicitar añadir un restaurante →
+                    {t(lang, "prof_request_add")}
                   </button>
                 </div>
               </>
@@ -305,13 +307,13 @@ export default function ProfilePage({
 
                 {/* Selector de restaurante */}
                 <label className="auth-field">
-                  <span>Restaurante <strong>*</strong></span>
+                  <span>{t(lang, "field_restaurant")} <strong>*</strong></span>
                   <select
                     value={jobForm.restaurantId}
                     onChange={(e) => setJobForm((f) => ({ ...f, restaurantId: e.target.value }))}
                     required
                   >
-                    <option value="">Selecciona un restaurante...</option>
+                    <option value="">{t(lang, "prof_select_rest")}</option>
                     {allRestaurants.map((r) => (
                       <option key={r.id} value={r.id}>{r.Name}</option>
                     ))}
@@ -320,9 +322,9 @@ export default function ProfilePage({
 
                 {/* Cargo / rol */}
                 <label className="auth-field">
-                  <span>Cargo / Rol <small className="optional-label">(opcional)</small></span>
+                  <span>{t(lang, "prof_role_lbl")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
                   <input
-                    placeholder="ej. Cocinero, Camarero, Jefe de sala..."
+                    placeholder={t(lang, "prof_role_placeholder")}
                     value={jobForm.role}
                     onChange={(e) => setJobForm((f) => ({ ...f, role: e.target.value }))}
                   />
@@ -335,27 +337,27 @@ export default function ProfilePage({
                     checked={jobForm.currentJob}
                     onChange={(e) => setJobForm((f) => ({ ...f, currentJob: e.target.checked }))}
                   />
-                  <span>Estoy trabajando aquí actualmente</span>
+                  <span>{t(lang, "prof_working_here")}</span>
                 </label>
 
                 <div className="modal-actions">
                   <button type="submit" className="primary-btn" disabled={!jobForm.restaurantId}>
-                    Añadir experiencia
+                    {t(lang, "prof_add_job_btn")}
                   </button>
                   <button type="button" className="small-btn" onClick={() => setAddJobOpen(false)}>
-                    Cancelar
+                    {t(lang, "edit_cancel")}
                   </button>
                 </div>
 
                 {/* Enlace para solicitar un restaurante que no está en la lista */}
                 <p className="modal-hint-text">
-                  ¿No ves tu restaurante?{" "}
+                  {t(lang, "prof_not_see")}{" "}
                   <button
                     type="button"
                     className="link-btn"
                     onClick={() => { setAddJobOpen(false); handleOpenRequest(); }}
                   >
-                    Solicita que lo añadan →
+                    {t(lang, "prof_request_add")}
                   </button>
                 </p>
               </form>
@@ -364,23 +366,20 @@ export default function ProfilePage({
         </div>
       )}
 
-      {/* ── Modal: solicitar alta de restaurante ──────────────────────────── */}
+      {/* ── Modal: solicitar alta de restaurante ───────────────────────────── */}
       {requestOpen && (
         <div className="modal-backdrop">
           <div className="modal-box modal-box-wide">
-            <h3 className="modal-title">Solicitar añadir un restaurante</h3>
-            <p className="modal-text">
-              Describe el restaurante donde trabajas o has trabajado. Un administrador revisará tu solicitud
-              y, si todo está correcto, lo añadirá a la plataforma.
-            </p>
+            <h3 className="modal-title">{t(lang, "prof_request_title")}</h3>
+            <p className="modal-text">{t(lang, "prof_request_body")}</p>
             <form className="auth-form clean-auth-form" onSubmit={handleSendRequest}>
 
               <label className="auth-field">
-                <span>Descripción del restaurante <strong>*</strong></span>
+                <span>{t(lang, "prof_request_desc_lbl")} <strong>*</strong></span>
                 <textarea
                   className="request-textarea"
                   rows={5}
-                  placeholder="Nombre del restaurante, dirección, teléfono, tu cargo, etc."
+                  placeholder={t(lang, "prof_request_placeholder")}
                   value={requestDesc}
                   onChange={(e) => setRequestDesc(e.target.value)}
                   required
@@ -389,10 +388,10 @@ export default function ProfilePage({
 
               <div className="modal-actions">
                 <button type="submit" className="primary-btn" disabled={!requestDesc.trim()}>
-                  Enviar solicitud
+                  {t(lang, "prof_send_request")}
                 </button>
                 <button type="button" className="small-btn" onClick={() => setRequestOpen(false)}>
-                  Cancelar
+                  {t(lang, "edit_cancel")}
                 </button>
               </div>
             </form>

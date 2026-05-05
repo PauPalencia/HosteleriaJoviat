@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { t } from "../utils/translations";
 
 const EMPTY_FORM = {
   name: "",
@@ -13,7 +14,7 @@ const EMPTY_FORM = {
   currentJob: true
 };
 
-export default function AdminCreateStudentPage({ restaurants, onCreateStudent, isSubmitting }) {
+export default function AdminCreateStudentPage({ restaurants, onCreateStudent, isSubmitting, lang = "es" }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const sortedRestaurants = useMemo(
@@ -23,12 +24,10 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
 
   return (
     <section className="panel">
-      <h2>Crear alumnos validados</h2>
+      <h2>{t(lang, "cs_title")}</h2>
+      <p className="section-helper-text">{t(lang, "cs_helper")}</p>
       <p className="section-helper-text">
-        Crea un alumno ya validado y, si quieres, asígnale desde el inicio su relación con un restaurante.
-      </p>
-      <p className="section-helper-text">
-        <strong>*</strong> obligatorio · <span className="optional-label">opcional</span>
+        <strong>*</strong> {t(lang, "cs_required_note")} · <span className="optional-label">{t(lang, "cs_optional")}</span>
       </p>
 
       <form
@@ -37,14 +36,13 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
           event.preventDefault();
           setFormError("");
 
-          // Reglas mínimas pedidas: para crear validado solo exigimos email + contraseña.
           if (!form.email.trim() || !form.password.trim()) {
-            setFormError("Debes indicar al menos correo y contraseña para crear el alumno validado.");
+            setFormError(t(lang, "cs_error"));
             return;
           }
 
           await onCreateStudent({
-            Name: form.name.trim() || "Alumno validado",
+            Name: form.name.trim() || t(lang, "cs_submit"),
             Email: form.email.trim().toLowerCase(),
             Phone: form.phone.trim(),
             Curso: form.curso.trim(),
@@ -61,13 +59,13 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
         {formError && <p className="error-box">{formError}</p>}
 
         <label className="auth-field">
-          <span>Nombre completo <small className="optional-label">(opcional)</small></span>
+          <span>{t(lang, "edit_name")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
           <input value={form.name} onChange={(event) => updateField(setForm, "name", event.target.value)} />
         </label>
 
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Correo <strong>*</strong></span>
+            <span>{t(lang, "field_email")} <strong>*</strong></span>
             <input
               type="email"
               value={form.email}
@@ -76,18 +74,18 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
             />
           </label>
           <label className="auth-field">
-            <span>Teléfono <small className="optional-label">(opcional)</small></span>
+            <span>{t(lang, "field_phone")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
             <input value={form.phone} onChange={(event) => updateField(setForm, "phone", event.target.value)} />
           </label>
         </div>
 
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Curso <small className="optional-label">(opcional)</small></span>
+            <span>{t(lang, "field_curso")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
             <input value={form.curso} onChange={(event) => updateField(setForm, "curso", event.target.value)} />
           </label>
           <label className="auth-field">
-            <span>Contraseña inicial <strong>*</strong></span>
+            <span>{t(lang, "field_password")} <strong>*</strong></span>
             <input
               type="password"
               value={form.password}
@@ -98,13 +96,13 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
         </div>
 
         <label className="auth-field">
-          <span>LinkedIn <small className="optional-label">(opcional)</small></span>
+          <span>{t(lang, "field_linkedin")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
           <input value={form.linkedIn} onChange={(event) => updateField(setForm, "linkedIn", event.target.value)} />
         </label>
 
         {/* Campo para la URL de la foto de perfil del alumno */}
         <label className="auth-field">
-          <span>URL de foto de perfil <small className="optional-label">(opcional)</small></span>
+          <span>{t(lang, "field_photo_url")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
           <input
             type="url"
             placeholder="https://ejemplo.com/foto.jpg"
@@ -125,12 +123,12 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
           </div>
         )}
 
-        <h3 className="admin-subtitle">Asignación opcional a restaurante</h3>
+        <h3 className="admin-subtitle">{t(lang, "cs_assign_title")}</h3>
 
         <label className="auth-field">
-          <span>Restaurante <small className="optional-label">(opcional)</small></span>
+          <span>{t(lang, "field_restaurant")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
           <select value={form.restaurantId} onChange={(event) => updateField(setForm, "restaurantId", event.target.value)}>
-            <option value="">Sin asignar todavía</option>
+            <option value="">{t(lang, "cs_no_assign")}</option>
             {sortedRestaurants.map((restaurant) => (
               <option key={restaurant.id} value={restaurant.id}>{restaurant.Name}</option>
             ))}
@@ -139,8 +137,12 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
 
         <div className="auth-form-grid compact-grid">
           <label className="auth-field">
-            <span>Cargo <small className="optional-label">(opcional)</small></span>
-            <input value={form.workRole} onChange={(event) => updateField(setForm, "workRole", event.target.value)} placeholder="Chef, sala, prácticas..." />
+            <span>{t(lang, "field_role")} <small className="optional-label">({t(lang, "cs_optional")})</small></span>
+            <input
+              value={form.workRole}
+              onChange={(event) => updateField(setForm, "workRole", event.target.value)}
+              placeholder={t(lang, "cs_role_placeholder")}
+            />
           </label>
           <label className="admin-checkbox-field">
             <input
@@ -148,12 +150,12 @@ export default function AdminCreateStudentPage({ restaurants, onCreateStudent, i
               checked={form.currentJob}
               onChange={(event) => updateField(setForm, "currentJob", event.target.checked)}
             />
-            <span>Está trabajando actualmente ahí</span>
+            <span>{t(lang, "cs_working_here")}</span>
           </label>
         </div>
 
         <button type="submit" className="primary-btn auth-submit-btn" disabled={isSubmitting}>
-          {isSubmitting ? "Creando..." : "Crear alumno validado"}
+          {isSubmitting ? t(lang, "cs_submitting") : t(lang, "cs_submit")}
         </button>
       </form>
     </section>

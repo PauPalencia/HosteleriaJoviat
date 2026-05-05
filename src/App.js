@@ -195,8 +195,8 @@ function App() {
       />
 
       <main className="content">
-        {loading && !isAuthSection && <p className="state-text">Cargando datos desde Firestore…</p>}
-        {error && !isAuthSection && <p className="error-box">Error: {error}</p>}
+        {loading && !isAuthSection && <p className="state-text">{t(lang, "app_loading")}</p>}
+        {error && !isAuthSection && <p className="error-box">{t(lang, "app_error")}: {error}</p>}
         {!isAuthSection && adminFeedback.text && (
           <p className={adminFeedback.type === "error" ? "error-box" : "info-box"}>{adminFeedback.text}</p>
         )}
@@ -318,6 +318,7 @@ function App() {
           <AdminApprovedStudentsPage
             approvedStudents={approvedStudents}
             approvedRestaurantRequests={restaurantRequests.filter((r) => r.approved)}
+            lang={lang}
           />
         )}
 
@@ -327,6 +328,7 @@ function App() {
             restaurants={allRestaurants}
             onCreateStudent={handleCreateValidatedStudent}
             isSubmitting={pendingActionId === "create-student"}
+            lang={lang}
           />
         )}
 
@@ -335,6 +337,7 @@ function App() {
           <AdminCreateRestaurantPage
             onCreateRestaurant={handleCreateRestaurant}
             isSubmitting={pendingActionId === "create-restaurant"}
+            lang={lang}
           />
         )}
 
@@ -348,29 +351,27 @@ function App() {
             totalStudents={allStudents.length}
             totalRestaurants={allRestaurants.length}
             onNavigate={handleSectionChange}
+            lang={lang}
           />
         )}
 
         {/* Acceso denegado: zona admin sin sesión de admin */}
         {section.startsWith("admin-") && !isAdmin && (
           <section className="panel">
-            <h2>Zona de administración</h2>
-            <p>Solo los administradores pueden entrar en esta sección.</p>
+            <h2>{t(lang, "admin_zone_title")}</h2>
+            <p>{t(lang, "admin_zone_body")}</p>
             <button type="button" className="primary-btn" onClick={() => handleSectionChange("auth")}>
-              Ir a login
+              {t(lang, "admin_zone_login")}
             </button>
           </section>
         )}
 
         {!isAuthSection && error && section !== "perfil" && !section.startsWith("admin-") && (
           <section className="panel">
-            <h2>Acceso limitado</h2>
-            <p>
-              La carga remota ha fallado, así que las páginas de alumnos y restaurantes quedan bloqueadas hasta que la
-              conexión vuelva a funcionar.
-            </p>
+            <h2>{t(lang, "error_zone_title")}</h2>
+            <p>{t(lang, "error_zone_body")}</p>
             <button type="button" className="primary-btn" onClick={() => handleSectionChange("auth")}>
-              Ir a login / sign in
+              {t(lang, "error_zone_login")}
             </button>
           </section>
         )}
