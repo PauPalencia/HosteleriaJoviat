@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useState, useRef } from "react";
 import { usePlacesAutocomplete } from "../hooks/usePlacesAutocomplete";
 import { t } from "../utils/translations";
 
@@ -16,20 +16,14 @@ const EMPTY_FORM = {
 export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmitting, lang = "es" }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
-  /* Ref del contenedor del buscador (para detectar clics fuera y cerrar el dropdown) */
-  const searchWrapRef = useRef(null);
+  /* Ref del input de búsqueda — el widget nativo de Google Autocomplete
+   * se adjunta directamente a este elemento del DOM */
+  const searchInputRef = useRef(null);
 
-  /* Hook de autocompletado: devuelve predicciones y funciones para interactuar */
-  const {
-    query,
-    predictions,
-    loading,
-    ready,
-    handleSearch,
-    selectPrediction,
-    clearPredictions
-  } = usePlacesAutocomplete((placeData) => {
-    /* Cuando el usuario selecciona un lugar, rellenar los campos del formulario */
+  /* Hook de autocompletado con el widget nativo de Google Places.
+   * Cuando el usuario selecciona un lugar del dropdown de Google,
+   * se llama al callback y rellenamos los campos del formulario. */
+  const { ready, apiError } = usePlacesAutocomplete(searchInputRef, (placeData) => {
     setForm((current) => ({
       ...current,
       name:    placeData.name    || current.name,
@@ -40,92 +34,52 @@ export default function AdminCreateRestaurantPage({ onCreateRestaurant, isSubmit
     }));
   });
 
-  /* Cerrar el dropdown si el usuario hace clic fuera del buscador */
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(event.target)) {
-        clearPredictions();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [clearPredictions]);
-
   return (
     <section className="panel">
       <h2>{t(lang, "cr_title")}</h2>
       <p className="section-helper-text">{t(lang, "cr_helper")}</p>
 
-      {/* ── Buscador de Google Places con dropdown personalizado ─────────────── */}
-      <div className="places-search-wrap" ref={searchWrapRef}>
+      {/* ── Buscador de Google Places (widget nativo) ────────────────────────── */}
+      <div className="places-search-wrap">
         <div className="places-search-field">
           {/* Icono de búsqueda */}
           <span className="places-search-icon" aria-hidden="true">🔍</span>
 
+          {/*
+           * Input NO controlado por React: el widget de Google gestiona
+           * su valor internamente y muestra su propio dropdown.
+           * Cuando el usuario elige un lugar, nuestro callback
+           * onPlaceSelected rellena el formulario de abajo.
+           */}
           <input
+            ref={searchInputRef}
             type="text"
             className="places-search-input"
-            placeholder={ready ? t(lang, "cr_search_ready") : t(lang, "cr_search_loading")}
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
+            placeholder={
+              apiError
+                ? `⚠ ${apiError}`
+                : ready
+                ? t(lang, "cr_search_ready")
+                : t(lang, "cr_search_loading")
+            }
             disabled={!ready}
             autoComplete="off"
           />
-
-          {/* Spinner mientras hay petición en vuelo */}
-          {loading && <span className="places-search-spinner" aria-label="Buscando..." />}
-
-          {/* Botón para limpiar la búsqueda */}
-          {query && (
-            <button
-              type="button"
-              className="places-clear-btn"
-              onClick={() => { handleSearch(""); }}
-              aria-label="Limpiar búsqueda"
-            >
-              ✕
-            </button>
-          )}
         </div>
 
         {/* Texto de ayuda bajo el buscador */}
         <p className="places-search-hint">{t(lang, "cr_search_hint")}</p>
-
-        {/* Dropdown de predicciones */}
-        {predictions.length > 0 && (
-          <ul className="places-dropdown" role="listbox">
-            {predictions.map((prediction) => (
-              <li
-                key={prediction.place_id}
-                className="places-dropdown-item"
-                role="option"
-                aria-selected={false}
-                /* onMouseDown en vez de onClick para que se ejecute antes de onBlur */
-                onMouseDown={() => selectPrediction(prediction)}
-              >
-                {/* Nombre principal del lugar */}
-                <span className="places-item-name">
-                  {prediction.structured_formatting?.main_text || prediction.description}
-                </span>
-                {/* Dirección secundaria */}
-                {prediction.structured_formatting?.secondary_text && (
-                  <span className="places-item-address">
-                    {prediction.structured_formatting.secondary_text}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
-      {/* ── Formulario manual (editable) ─────────────────────────────────────── */}
+      {/* ── Formulario manual (los campos se rellenan solos al elegir un lugar) ─ */}
       <form
         className="auth-form clean-auth-form"
         onSubmit={(event) => {
           event.preventDefault();
           onCreateRestaurant(form);
           setForm(EMPTY_FORM);
+          /* Limpiar el input del buscador al enviar */
+          if (searchInputRef.current) searchInputRef.current.value = "";
         }}
       >
         <label className="auth-field">

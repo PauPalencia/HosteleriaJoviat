@@ -922,6 +922,56 @@ body {
   color: #6b7280;
 }
 
+/* ── Dropdown nativo de Google Places (.pac-container) ──────────────────── */
+
+/* Contenedor principal del dropdown nativo de Google Autocomplete */
+.pac-container {
+  border-radius: 14px !important;
+  border: 1.5px solid #e5e7eb !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13) !important;
+  font-family: inherit !important;
+  margin-top: 4px !important;
+  overflow: hidden;
+  z-index: 10000 !important;
+}
+
+/* Cada ítem de predicción */
+.pac-item {
+  padding: 0.6rem 1rem !important;
+  cursor: pointer !important;
+  border-top: 1px solid #f3f4f6 !important;
+  font-size: 0.9rem !important;
+  color: #111 !important;
+  line-height: 1.4 !important;
+}
+
+.pac-item:first-child {
+  border-top: none !important;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background: #eff6ff !important;
+}
+
+/* Texto principal (nombre del lugar) */
+.pac-item-query {
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  color: #111 !important;
+}
+
+/* Tipo de lugar (texto secundario de Google) */
+.pac-matched {
+  font-weight: 700 !important;
+  color: #2563eb !important;
+}
+
+/* Ocultar el logo de Google si hay opción legal de hacerlo */
+.pac-logo::after {
+  display: none !important;
+}
+
 /* ── Icono de clúster del mapa de restaurantes ───────────────────────────── */
 
 /* Burbuja circular azul con el número de restaurantes agrupados */
